@@ -44,9 +44,9 @@ type AchievementDef = {
   icon: string;
   category: 'trades' | 'pnl' | 'streak' | 'risk' | 'discipline' | 'special' | 'monthly' | 'time' | 'market' | 'mindset' | 'fun';
   rewardXp: number;
-  isMonthly?: boolean;  // 是否為月度成就
-  requirement: (trades: Trade[]) => boolean;
-  monthlyRequirement?: (monthlyTrades: Trade[]) => boolean;  // 月度成就專用
+  isMonthly?: boolean;
+  requirement?: (trades: Trade[]) => boolean;
+  monthlyRequirement?: (monthlyTrades: Trade[]) => boolean;
 };
 
 type UserSettings = {
@@ -93,7 +93,6 @@ type View = 'overview' | 'journal' | 'analytics' | 'calendar' | 'achievements';
 // LEVEL CONFIG - 更困難的升級系統 (28段位)
 // ============================================
 
-// 等級配置 - 28 個段位（XP 需求 x5）
 const LEVEL_CONFIG = [
   { level: 1, title: 'Rookie I', icon: '🥉', xpRequired: 0 },
   { level: 2, title: 'Rookie II', icon: '🥉', xpRequired: 250 },
@@ -126,7 +125,7 @@ const LEVEL_CONFIG = [
 ];
 
 // ============================================
-// ACHIEVEMENTS HELPERS
+// ACHIEVEMENTS HELPERS (必須在 ACHIEVEMENTS_CONFIG 之前)
 // ============================================
 
 function hasStreak(trades: Trade[], count: number, type: 'win' | 'loss'): boolean {
@@ -212,6 +211,110 @@ function hasBounceBack(trades: Trade[]): boolean {
   }
   return false;
 }
+
+// ============================================
+// ✅ 月度相關輔助函數 (必須在 ACHIEVEMENTS_CONFIG 之前)
+// ============================================
+
+const getMonthlyTrades = (trades: Trade[]): Trade[] => {
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  return trades.filter(t => new Date(t.trade_date) >= startOfMonth);
+};
+
+const isLastDayOfMonth = (): boolean => {
+  const today = new Date();
+  const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+  return today.getDate() === lastDay.getDate();
+};
+
+const getMonthlyProfitFactor = (trades: Trade[]): number => {
+  const totalWins = trades.filter(t => t.pnl > 0).reduce((sum, t) => sum + t.pnl, 0);
+  const totalLosses = Math.abs(trades.filter(t => t.pnl < 0).reduce((sum, t) => sum + t.pnl, 0));
+  return totalLosses > 0 ? totalWins / totalLosses : totalWins > 0 ? 999 : 0;
+};
+
+const getMonthlyRiskReward = (trades: Trade[]): number => {
+  const winners = trades.filter(t => t.pnl > 0);
+  const losers = trades.filter(t => t.pnl < 0);
+  const avgWin = winners.reduce((sum, t) => sum + t.pnl, 0) / (winners.length || 1);
+  const avgLoss = Math.abs(losers.reduce((sum, t) => sum + t.pnl, 0)) / (losers.length || 1);
+  return avgLoss > 0 ? avgWin / avgLoss : 0;
+};
+
+const getMonthlyTotalStopLoss = (trades: Trade[]): number => {
+  return trades.reduce((sum, t) => sum + Math.abs(t.stop_loss || 0), 0);
+};
+
+const getMonthlyWinRate = (trades: Trade[]): number => {
+  if (trades.length === 0) return 0;
+  return trades.filter(t => t.pnl > 0).length / trades.length * 100;
+};
+
+const getMonthlyNotesRate = (trades: Trade[]): number => {
+  if (trades.length === 0) return 0;
+  return trades.filter(t => t.notes && t.notes.length > 10).length / trades.length;
+};
+
+const getMonthlyScreenshotRate = (trades: Trade[]): number => {
+  if (trades.length === 0) return 0;
+  return trades.filter(t => t.screenshot_url && t.screenshot_url.length > 0).length / trades.length;
+};
+
+const getMonthlyTagRate = (trades: Trade[]): number => {
+  if (trades.length === 0) return 0;
+  return trades.filter(t => t.tags && t.tags.length > 0).length / trades.length;
+};
+
+const getMonthlyMaxStreak = (trades: Trade[]): number => {
+  let streak = 0, maxStreak = 0;
+  for (const trade of trades) {
+    if (trade.pnl > 0) { streak++; if (streak > maxStreak) maxStreak = streak; }
+    else { streak = 0; }
+  }
+  return maxStreak;
+};
+
+const getMonthlyAvgWin = (trades: Trade[]): number => {
+  const winners = trades.filter(t => t.pnl > 0);
+  if (winners.length === 0) return 0;
+  return winners.reduce((sum, t) => sum + t.pnl, 0) / winners.length;
+};
+
+// ============================================
+// ✅ 累計成就輔助函數 (必須在 ACHIEVEMENTS_CONFIG 之前)
+// ============================================
+
+const getAvgWin = (trades: Trade[]): number => {
+  const winners = trades.filter(t => t.pnl > 0);
+  if (winners.length === 0) return 0;
+  return winners.reduce((sum, t) => sum + t.pnl, 0) / winners.length;
+};
+
+const getMaxDrawdown = (trades: Trade[]): number => {
+  if (trades.length === 0) return 0;
+  let peak = 0, maxDrawdown = 0;
+  let cumulative = 0;
+  for (const trade of trades) {
+    cumulative += trade.pnl;
+    if (cumulative > peak) peak = cumulative;
+    const drawdown = peak - cumulative;
+    if (drawdown > maxDrawdown) maxDrawdown = drawdown;
+  }
+  return maxDrawdown;
+};
+
+const getTradingSpan = (trades: Trade[]): number => {
+  if (trades.length < 2) return 0;
+  const dates = trades.map(t => new Date(t.trade_date).getTime());
+  const first = Math.min(...dates);
+  const last = Math.max(...dates);
+  return Math.floor((last - first) / (1000 * 60 * 60 * 24));
+};
+
+// ============================================
+// ACHIEVEMENTS_CONFIG (108個成就)
+// ============================================
 
 const ACHIEVEMENTS_CONFIG: AchievementDef[] = [
   // ============================================
@@ -391,7 +494,7 @@ const ACHIEVEMENTS_CONFIG: AchievementDef[] = [
   { id: 'consistent_size', name: 'Consistent Size', description: '90%+ trades use same lot size', icon: '📏', category: 'mindset', rewardXp: 40, isMonthly: false,
     requirement: (t) => { if(t.length < 10) return false; const sizes = t.map(trade => trade.lot_size); const mostCommon = sizes.sort((a,b) => sizes.filter(v => v===a).length - sizes.filter(v => v===b).length).pop(); return sizes.filter(s => s === mostCommon).length / sizes.length >= 0.9; } },
   { id: 'early_bird', name: 'Early Bird', description: '20+ trades within 1 hour of market open', icon: '🌅', category: 'mindset', rewardXp: 50, isMonthly: false,
-    requirement: (t) => { /* Simplified: check if any trades are early */ return t.length >= 20; } },
+    requirement: (t) => t.length >= 20 },
 
   // ============================================
   // 13. 特殊趣味系列 (12個)
@@ -541,132 +644,357 @@ function App() {
   const email = session.user.email ?? 'trader@tradecade.com';
   const unclaimedCount = stats?.unclaimed_achievements || 0;
 
-// ============================================
-// 輔助函數：計算等級（與後端保持一致）
-// ============================================
-const calculateLevel = (xp: number): number => {
-  if (xp >= 739000) return 28;
-  if (xp >= 585000) return 27;
-  if (xp >= 463000) return 26;
-  if (xp >= 366500) return 25;
-  if (xp >= 290000) return 24;
-  if (xp >= 229500) return 23;
-  if (xp >= 181500) return 22;
-  if (xp >= 143500) return 21;
-  if (xp >= 113500) return 20;
-  if (xp >= 89500) return 19;
-  if (xp >= 70500) return 18;
-  if (xp >= 55500) return 17;
-  if (xp >= 43500) return 16;
-  if (xp >= 34000) return 15;
-  if (xp >= 26500) return 14;
-  if (xp >= 20500) return 13;
-  if (xp >= 15800) return 12;
-  if (xp >= 12100) return 11;
-  if (xp >= 9200) return 10;
-  if (xp >= 6900) return 9;
-  if (xp >= 5100) return 8;
-  if (xp >= 3700) return 7;
-  if (xp >= 2600) return 6;
-  if (xp >= 1750) return 5;
-  if (xp >= 1100) return 4;
-  if (xp >= 600) return 3;
-  if (xp >= 250) return 2;
-  return 1;
-};
+  const calculateLevel = (xp: number): number => {
+    if (xp >= 739000) return 28;
+    if (xp >= 585000) return 27;
+    if (xp >= 463000) return 26;
+    if (xp >= 366500) return 25;
+    if (xp >= 290000) return 24;
+    if (xp >= 229500) return 23;
+    if (xp >= 181500) return 22;
+    if (xp >= 143500) return 21;
+    if (xp >= 113500) return 20;
+    if (xp >= 89500) return 19;
+    if (xp >= 70500) return 18;
+    if (xp >= 55500) return 17;
+    if (xp >= 43500) return 16;
+    if (xp >= 34000) return 15;
+    if (xp >= 26500) return 14;
+    if (xp >= 20500) return 13;
+    if (xp >= 15800) return 12;
+    if (xp >= 12100) return 11;
+    if (xp >= 9200) return 10;
+    if (xp >= 6900) return 9;
+    if (xp >= 5100) return 8;
+    if (xp >= 3700) return 7;
+    if (xp >= 2600) return 6;
+    if (xp >= 1750) return 5;
+    if (xp >= 1100) return 4;
+    if (xp >= 600) return 3;
+    if (xp >= 250) return 2;
+    return 1;
+  };
 
-// ============================================
-// 成就解鎖檢查函數（支援月度成就）
-// ============================================
-const checkAndUnlockAchievements = async (userId: string, currentTrades: Trade[]) => {
-  if (!supabase) return;
+  const checkAndUnlockAchievements = async (userId: string, currentTrades: Trade[]) => {
+    if (!supabase) return;
 
-  try {
-    // 獲取當前所有成就記錄
-    const { data: existingAchievements } = await supabase
-      .from('user_achievements')
-      .select('*')
-      .eq('user_id', userId);
-
-    const existingMap = new Map(
-      existingAchievements?.map(a => [a.achievement_id, a]) || []
-    );
-
-    // 獲取當月交易
-    const monthlyTrades = getMonthlyTrades(currentTrades);
-    const isLastDay = isLastDayOfMonth();
-
-    const toInsert: { user_id: string; achievement_id: string; claimed: boolean }[] = [];
-    const toDelete: string[] = [];
-
-    for (const ach of ACHIEVEMENTS_CONFIG) {
-      let isConditionMet = false;
-
-      if (ach.isMonthly) {
-        // 月度成就：只有當月最後一天才檢查
-        if (isLastDay && ach.monthlyRequirement) {
-          isConditionMet = ach.monthlyRequirement(monthlyTrades);
-        }
-      } else {
-        // 累計成就：隨時檢查
-        isConditionMet = ach.requirement(currentTrades);
-      }
-
-      const existing = existingMap.get(ach.id);
-
-      if (isConditionMet) {
-        if (!existing) {
-          toInsert.push({
-            user_id: userId,
-            achievement_id: ach.id,
-            claimed: false,
-          });
-        }
-      } else {
-        if (existing) {
-          toDelete.push(existing.id);
-        }
-      }
-    }
-
-    // 刪除不再符合條件的成就
-    if (toDelete.length > 0) {
-      console.log(`🔒 Removing ${toDelete.length} achievements (no longer meet conditions)`);
-      
-      const { data: deletedAchs } = await supabase
+    try {
+      const { data: existingAchievements } = await supabase
         .from('user_achievements')
-        .select('achievement_id, claimed')
-        .in('id', toDelete);
+        .select('*')
+        .eq('user_id', userId);
 
-      let xpToDeduct = 0;
-      if (deletedAchs) {
-        for (const ach of deletedAchs) {
-          if (ach.claimed) {
-            const config = ACHIEVEMENTS_CONFIG.find(a => a.id === ach.achievement_id);
-            if (config) {
-              xpToDeduct += config.rewardXp;
-            }
+      const existingMap = new Map(
+        existingAchievements?.map(a => [a.achievement_id, a]) || []
+      );
+
+      const monthlyTrades = getMonthlyTrades(currentTrades);
+      const isLastDay = isLastDayOfMonth();
+
+      const toInsert: { user_id: string; achievement_id: string; claimed: boolean }[] = [];
+      const toDelete: string[] = [];
+
+      for (const ach of ACHIEVEMENTS_CONFIG) {
+        let isConditionMet = false;
+
+        if (ach.isMonthly) {
+          if (isLastDay && ach.monthlyRequirement) {
+            isConditionMet = ach.monthlyRequirement(monthlyTrades);
+          }
+        } else {
+          if (ach.requirement) {
+            isConditionMet = ach.requirement(currentTrades);
+          }
+        }
+
+        const existing = existingMap.get(ach.id);
+
+        if (isConditionMet) {
+          if (!existing) {
+            toInsert.push({
+              user_id: userId,
+              achievement_id: ach.id,
+              claimed: false,
+            });
+          }
+        } else {
+          if (existing) {
+            toDelete.push(existing.id);
           }
         }
       }
 
-      await supabase
-        .from('user_achievements')
-        .delete()
-        .in('id', toDelete);
+      if (toDelete.length > 0) {
+        console.log(`🔒 Removing ${toDelete.length} achievements (no longer meet conditions)`);
+        
+        const { data: deletedAchs } = await supabase
+          .from('user_achievements')
+          .select('achievement_id, claimed')
+          .in('id', toDelete);
 
-      if (xpToDeduct > 0) {
+        let xpToDeduct = 0;
+        if (deletedAchs) {
+          for (const ach of deletedAchs) {
+            if (ach.claimed) {
+              const config = ACHIEVEMENTS_CONFIG.find(a => a.id === ach.achievement_id);
+              if (config) {
+                xpToDeduct += config.rewardXp;
+              }
+            }
+          }
+        }
+
+        await supabase
+          .from('user_achievements')
+          .delete()
+          .in('id', toDelete);
+
+        if (xpToDeduct > 0) {
+          const { data: currentStats } = await supabase
+            .from('user_stats')
+            .select('total_xp, claimed_xp')
+            .eq('user_id', userId)
+            .maybeSingle();
+
+          if (currentStats) {
+            const newTotalXp = Math.max(0, (currentStats.total_xp || 0) - xpToDeduct);
+            const newClaimedXp = Math.max(0, (currentStats.claimed_xp || 0) - xpToDeduct);
+            const newLevel = calculateLevel(newTotalXp);
+
+            await supabase
+              .from('user_stats')
+              .update({
+                total_xp: newTotalXp,
+                claimed_xp: newClaimedXp,
+                level: newLevel,
+                updated_at: new Date().toISOString()
+              })
+              .eq('user_id', userId);
+
+            console.log(`➖ Deducted ${xpToDeduct} XP for removed achievements`);
+          }
+        }
+      }
+
+      if (toInsert.length > 0) {
+        console.log(`🎯 Unlocked ${toInsert.length} new achievements!`, toInsert.map(a => a.achievement_id));
+        
+        await supabase
+          .from('user_achievements')
+          .insert(toInsert);
+
+        const { data: unclaimedData } = await supabase
+          .from('user_achievements')
+          .select('id', { count: 'exact' })
+          .eq('user_id', userId)
+          .eq('claimed', false);
+
+        await supabase
+          .from('user_stats')
+          .update({ 
+            unclaimed_achievements: unclaimedData?.length || 0
+          })
+          .eq('user_id', userId);
+        
+        setToast(`🎉 ${toInsert.length} new achievement${toInsert.length > 1 ? 's' : ''} unlocked!`);
+      }
+
+      if (toInsert.length === 0 && toDelete.length === 0) {
+        const { data: unclaimedData } = await supabase
+          .from('user_achievements')
+          .select('id', { count: 'exact' })
+          .eq('user_id', userId)
+          .eq('claimed', false);
+
+        await supabase
+          .from('user_stats')
+          .update({ 
+            unclaimed_achievements: unclaimedData?.length || 0
+          })
+          .eq('user_id', userId);
+      }
+
+    } catch (error) {
+      console.error('Error checking achievements:', error);
+    }
+  };
+
+  const saveTrade = async (trade: Omit<Trade, 'id' | 'created_at' | 'user_id'>, id?: string) => {
+    if (!supabase) return;
+    
+    const payload = {
+      ...trade,
+      pnl: Number(trade.pnl),
+      pnl_percent: Number(trade.pnl_percent),
+      entry_price: Number(trade.entry_price),
+      exit_price: Number(trade.exit_price),
+      stop_loss: trade.stop_loss ? Number(trade.stop_loss) : null,
+      lot_size: Number(trade.lot_size),
+    };
+    
+    const result = id
+      ? await supabase.from('trades').update(payload).eq('id', id).select().maybeSingle()
+      : await supabase.from('trades').insert(payload).select().maybeSingle();
+      
+    if (result.error || !result.data) {
+      setToast('Could not save this trade. Check your connection.');
+      console.error(result.error);
+      return;
+    }
+    
+    setTrades((current) => id
+      ? current.map((item) => item.id === id ? result.data as Trade : item)
+      : [result.data as Trade, ...current]
+    );
+    setShowForm(false);
+    setEditingTrade(null);
+    setToast(id ? 'Trade updated' : 'Trade logged');
+
+    setTimeout(async () => {
+      if (session) {
+        const { data: latestTrades } = await supabase
+          .from('trades')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .order('trade_date', { ascending: false });
+        
+        if (latestTrades) {
+          setTrades(latestTrades as Trade[]);
+          await checkAndUnlockAchievements(session.user.id, latestTrades as Trade[]);
+        }
+        
+        const { data: statsData } = await supabase
+          .from('user_stats')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .maybeSingle();
+        
+        if (statsData) setStats(statsData as UserStats);
+        
+        const { data: achData } = await supabase
+          .from('user_achievements')
+          .select('*')
+          .eq('user_id', session.user.id);
+        
+        if (achData) setUserAchievements(achData as UserAchievement[]);
+      }
+    }, 800);
+  };
+
+  const deleteTrade = async (id: string) => {
+    if (!supabase) return;
+    
+    const { data: tradeToDelete } = await supabase
+      .from('trades')
+      .select('user_id')
+      .eq('id', id)
+      .maybeSingle();
+    
+    if (!tradeToDelete) {
+      setToast('Trade not found');
+      return;
+    }
+    
+    const { error } = await supabase
+      .from('trades')
+      .delete()
+      .eq('id', id);
+      
+    if (error) { 
+      setToast('Could not delete this trade.'); 
+      console.error(error);
+      return; 
+    }
+    
+    setTrades((current) => current.filter((item) => item.id !== id)); 
+    setToast('Trade removed');
+    
+    setTimeout(async () => {
+      if (session) {
+        const { data: latestTrades } = await supabase
+          .from('trades')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .order('trade_date', { ascending: false });
+        
+        if (latestTrades) {
+          setTrades(latestTrades as Trade[]);
+          await checkAndUnlockAchievements(session.user.id, latestTrades as Trade[]);
+        }
+        
+        const { data: statsData } = await supabase
+          .from('user_stats')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .maybeSingle();
+        
+        if (statsData) {
+          setStats(statsData as UserStats);
+        } else {
+          setStats({
+            total_xp: 0,
+            level: 1,
+            total_trades: 0,
+            winning_trades: 0,
+            losing_trades: 0,
+            total_pnl: 0,
+            max_drawdown: 0,
+            current_streak: 0,
+            best_streak: 0,
+            profit_factor: 0,
+            avg_win: 0,
+            avg_loss: 0,
+            profitability_score: 0,
+            risk_score: 0,
+            discipline_score: 0,
+            consistency_score: 0,
+            experience_score: 0,
+            achievements: [],
+            claimed_xp: 0,
+            unclaimed_achievements: 0,
+          });
+        }
+        
+        const { data: achData } = await supabase
+          .from('user_achievements')
+          .select('*')
+          .eq('user_id', session.user.id);
+        
+        if (achData) setUserAchievements(achData as UserAchievement[]);
+      }
+    }, 1000);
+  };
+
+  const claimAchievement = async (achievementId: string) => {
+    if (!supabase || !session) return;
+    setClaiming(achievementId);
+
+    try {
+      const { error: updateError } = await supabase
+        .from('user_achievements')
+        .update({ 
+          claimed: true, 
+          claimed_at: new Date().toISOString() 
+        })
+        .eq('user_id', session.user.id)
+        .eq('achievement_id', achievementId);
+
+      if (updateError) throw updateError;
+
+      const ach = ACHIEVEMENTS_CONFIG.find(a => a.id === achievementId);
+      
+      if (ach) {
         const { data: currentStats } = await supabase
           .from('user_stats')
-          .select('total_xp, claimed_xp')
-          .eq('user_id', userId)
+          .select('total_xp, claimed_xp, level')
+          .eq('user_id', session.user.id)
           .maybeSingle();
-
+        
         if (currentStats) {
-          const newTotalXp = Math.max(0, (currentStats.total_xp || 0) - xpToDeduct);
-          const newClaimedXp = Math.max(0, (currentStats.claimed_xp || 0) - xpToDeduct);
+          const newTotalXp = (currentStats.total_xp || 0) + ach.rewardXp;
+          const newClaimedXp = (currentStats.claimed_xp || 0) + ach.rewardXp;
           const newLevel = calculateLevel(newTotalXp);
-
+          
           await supabase
             .from('user_stats')
             .update({
@@ -675,376 +1003,88 @@ const checkAndUnlockAchievements = async (userId: string, currentTrades: Trade[]
               level: newLevel,
               updated_at: new Date().toISOString()
             })
-            .eq('user_id', userId);
+            .eq('user_id', session.user.id);
+          
+          const { data: unclaimedData } = await supabase
+            .from('user_achievements')
+            .select('id', { count: 'exact' })
+            .eq('user_id', session.user.id)
+            .eq('claimed', false);
 
-          console.log(`➖ Deducted ${xpToDeduct} XP for removed achievements`);
+          const unclaimedCount = unclaimedData?.length || 0;
+
+          await supabase
+            .from('user_stats')
+            .update({ 
+              unclaimed_achievements: unclaimedCount
+            })
+            .eq('user_id', session.user.id);
+          
+          setToast(`🎉 +${ach.rewardXp} XP claimed for "${ach.name}"!`);
         }
-      }
-    }
-
-    // 插入新解鎖的成就
-    if (toInsert.length > 0) {
-      console.log(`🎯 Unlocked ${toInsert.length} new achievements!`, toInsert.map(a => a.achievement_id));
-      
-      await supabase
-        .from('user_achievements')
-        .insert(toInsert);
-
-      const { data: unclaimedData } = await supabase
-        .from('user_achievements')
-        .select('id', { count: 'exact' })
-        .eq('user_id', userId)
-        .eq('claimed', false);
-
-      await supabase
-        .from('user_stats')
-        .update({ 
-          unclaimed_achievements: unclaimedData?.length || 0
-        })
-        .eq('user_id', userId);
-      
-      setToast(`🎉 ${toInsert.length} new achievement${toInsert.length > 1 ? 's' : ''} unlocked!`);
-    }
-
-    // 更新 unclaimed_achievements 計數
-    if (toInsert.length === 0 && toDelete.length === 0) {
-      const { data: unclaimedData } = await supabase
-        .from('user_achievements')
-        .select('id', { count: 'exact' })
-        .eq('user_id', userId)
-        .eq('claimed', false);
-
-      await supabase
-        .from('user_stats')
-        .update({ 
-          unclaimed_achievements: unclaimedData?.length || 0
-        })
-        .eq('user_id', userId);
-    }
-
-  } catch (error) {
-    console.error('Error checking achievements:', error);
-  }
-};
-
-  const saveTrade = async (trade: Omit<Trade, 'id' | 'created_at' | 'user_id'>, id?: string) => {
-  if (!supabase) return;
-  
-  const payload = {
-    ...trade,
-    pnl: Number(trade.pnl),
-    pnl_percent: Number(trade.pnl_percent),
-    entry_price: Number(trade.entry_price),
-    exit_price: Number(trade.exit_price),
-    stop_loss: trade.stop_loss ? Number(trade.stop_loss) : null,
-    lot_size: Number(trade.lot_size),
-  };
-  
-  const result = id
-    ? await supabase.from('trades').update(payload).eq('id', id).select().maybeSingle()
-    : await supabase.from('trades').insert(payload).select().maybeSingle();
-    
-  if (result.error || !result.data) {
-    setToast('Could not save this trade. Check your connection.');
-    console.error(result.error);
-    return;
-  }
-  
-  setTrades((current) => id
-    ? current.map((item) => item.id === id ? result.data as Trade : item)
-    : [result.data as Trade, ...current]
-  );
-  setShowForm(false);
-  setEditingTrade(null);
-  setToast(id ? 'Trade updated' : 'Trade logged');
-
-  // ✅ 刷新數據 + 檢查成就
-  setTimeout(async () => {
-    if (session) {
-      // 獲取最新的 trades
-      const { data: latestTrades } = await supabase
-        .from('trades')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .order('trade_date', { ascending: false });
-      
-      if (latestTrades) {
-        // 更新本地 trades
-        setTrades(latestTrades as Trade[]);
-        
-        // ✅ 檢查並解鎖新成就
-        await checkAndUnlockAchievements(session.user.id, latestTrades as Trade[]);
-      }
-      
-      // 刷新 stats
-      const { data: statsData } = await supabase
-        .from('user_stats')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .maybeSingle();
-      
-      if (statsData) setStats(statsData as UserStats);
-      
-      // 刷新成就列表
-      const { data: achData } = await supabase
-        .from('user_achievements')
-        .select('*')
-        .eq('user_id', session.user.id);
-      
-      if (achData) setUserAchievements(achData as UserAchievement[]);
-    }
-  }, 800);
-};
-
-  const deleteTrade = async (id: string) => {
-  if (!supabase) return;
-  
-  // 先獲取要刪除的交易信息
-  const { data: tradeToDelete } = await supabase
-    .from('trades')
-    .select('user_id')
-    .eq('id', id)
-    .maybeSingle();
-  
-  if (!tradeToDelete) {
-    setToast('Trade not found');
-    return;
-  }
-  
-  // 刪除交易
-  const { error } = await supabase
-    .from('trades')
-    .delete()
-    .eq('id', id);
-    
-  if (error) { 
-    setToast('Could not delete this trade.'); 
-    console.error(error);
-    return; 
-  }
-  
-  // 從本地狀態移除
-  setTrades((current) => current.filter((item) => item.id !== id)); 
-  setToast('Trade removed');
-  
-  // ✅ 刷新數據 + 重新檢查成就
-  setTimeout(async () => {
-    if (session) {
-      // 獲取最新的 trades
-      const { data: latestTrades } = await supabase
-        .from('trades')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .order('trade_date', { ascending: false });
-      
-      if (latestTrades) {
-        // 更新本地 trades
-        setTrades(latestTrades as Trade[]);
-        
-        // ✅ 重新檢查成就（刪除交易後可能不再滿足條件）
-        // 注意：這裡選擇保留已解鎖的成就，即使條件不再滿足
-        // 如果你想刪除不再滿足條件的成就，可以取消註釋下面的代碼
-        /*
-        // 獲取當前成就
-        const { data: currentAch } = await supabase
-          .from('user_achievements')
-          .select('*')
-          .eq('user_id', session.user.id);
-        
-        if (currentAch) {
-          const toDelete: string[] = [];
-          for (const ach of currentAch) {
-            const config = ACHIEVEMENTS_CONFIG.find(a => a.id === ach.achievement_id);
-            if (config && !config.requirement(latestTrades as Trade[]) && !ach.claimed) {
-              toDelete.push(ach.id);
-            }
-          }
-          if (toDelete.length > 0) {
-            await supabase
-              .from('user_achievements')
-              .delete()
-              .in('id', toDelete);
-          }
-        }
-        */
-        
-        // 檢查是否有新成就（通常刪除不會有新成就，但保留邏輯）
-        await checkAndUnlockAchievements(session.user.id, latestTrades as Trade[]);
-      }
-      
-      // 刷新 stats
-      const { data: statsData } = await supabase
-        .from('user_stats')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .maybeSingle();
-      
-      if (statsData) {
-        setStats(statsData as UserStats);
       } else {
-        setStats({
-          total_xp: 0,
-          level: 1,
-          total_trades: 0,
-          winning_trades: 0,
-          losing_trades: 0,
-          total_pnl: 0,
-          max_drawdown: 0,
-          current_streak: 0,
-          best_streak: 0,
-          profit_factor: 0,
-          avg_win: 0,
-          avg_loss: 0,
-          profitability_score: 0,
-          risk_score: 0,
-          discipline_score: 0,
-          consistency_score: 0,
-          experience_score: 0,
-          achievements: [],
-          claimed_xp: 0,
-          unclaimed_achievements: 0,
-        });
+        setToast('Achievement claimed!');
       }
-      
-      // 刷新成就列表
-      const { data: achData } = await supabase
-        .from('user_achievements')
-        .select('*')
-        .eq('user_id', session.user.id);
-      
-      if (achData) setUserAchievements(achData as UserAchievement[]);
+
+      setTimeout(() => {
+        if (session) {
+          supabase
+            .from('user_stats')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .maybeSingle()
+            .then(({ data }) => {
+              if (data) setStats(data as UserStats);
+            });
+          supabase
+            .from('user_achievements')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .then(({ data }) => {
+              if (data) setUserAchievements(data as UserAchievement[]);
+            });
+        }
+      }, 500);
+
+    } catch (error) {
+      console.error('Claim error:', error);
+      setToast('Failed to claim achievement');
+    } finally {
+      setClaiming(null);
     }
-  }, 1000);
-};
+  };
 
-const claimAchievement = async (achievementId: string) => {
-  if (!supabase || !session) return;
-  setClaiming(achievementId);
-
-  try {
-    // 1. 更新成就為已領取
-    const { error: updateError } = await supabase
-      .from('user_achievements')
+  const updateSettings = async (capital: number) => {
+    if (!supabase || !session) return;
+    
+    const currentBalance = settings.account_balance ?? capital;
+    
+    const { error } = await supabase
+      .from('user_settings')
       .update({ 
-        claimed: true, 
-        claimed_at: new Date().toISOString() 
+        initial_capital: capital,
+        account_balance: currentBalance
       })
-      .eq('user_id', session.user.id)
-      .eq('achievement_id', achievementId);
-
-    if (updateError) throw updateError;
-
-    // 2. 找到成就的 XP 獎勵
-    const ach = ACHIEVEMENTS_CONFIG.find(a => a.id === achievementId);
-    
-    if (ach) {
-      // 3. 獲取當前 stats
-      const { data: currentStats } = await supabase
-        .from('user_stats')
-        .select('total_xp, claimed_xp, level')
-        .eq('user_id', session.user.id)
-        .maybeSingle();
+      .eq('user_id', session.user.id);
       
-      if (currentStats) {
-        const newTotalXp = (currentStats.total_xp || 0) + ach.rewardXp;
-        const newClaimedXp = (currentStats.claimed_xp || 0) + ach.rewardXp;
-        const newLevel = calculateLevel(newTotalXp);
-        
-        // 4. 更新 user_stats
-        await supabase
-          .from('user_stats')
-          .update({
-            total_xp: newTotalXp,
-            claimed_xp: newClaimedXp,
-            level: newLevel,
-            updated_at: new Date().toISOString()
-          })
-          .eq('user_id', session.user.id);
-        
-        // ✅ 5. 重新計算 unclaimed_achievements
-        const { data: unclaimedData } = await supabase
-          .from('user_achievements')
-          .select('id', { count: 'exact' })
-          .eq('user_id', session.user.id)
-          .eq('claimed', false);
-
-        const unclaimedCount = unclaimedData?.length || 0;
-
-        await supabase
-          .from('user_stats')
-          .update({ 
-            unclaimed_achievements: unclaimedCount
-          })
-          .eq('user_id', session.user.id);
-        
-        setToast(`🎉 +${ach.rewardXp} XP claimed for "${ach.name}"!`);
-      }
+    if (!error) {
+      setSettings({ 
+        initial_capital: capital,
+        account_balance: currentBalance 
+      });
+      setToast('Settings updated successfully');
+      setShowSettings(false);
     } else {
-      setToast('Achievement claimed!');
+      setToast('Failed to update settings');
+      console.error(error);
     }
+  };
 
-    // 6. 刷新數據
-    setTimeout(() => {
-      if (session) {
-        supabase
-          .from('user_stats')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .maybeSingle()
-          .then(({ data }) => {
-            if (data) setStats(data as UserStats);
-          });
-        supabase
-          .from('user_achievements')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .then(({ data }) => {
-            if (data) setUserAchievements(data as UserAchievement[]);
-          });
-      }
-    }, 500);
+  const logout = () => { 
+    supabase?.auth.signOut(); 
+    setSession(null); 
+  };
 
-  } catch (error) {
-    console.error('Claim error:', error);
-    setToast('Failed to claim achievement');
-  } finally {
-    setClaiming(null);
-  }
-};
-
-const updateSettings = async (capital: number) => {
-  if (!supabase || !session) return;
-  
-  // 獲取當前的 account_balance 或使用初始資金
-  const currentBalance = settings.account_balance ?? capital;
-  
-  const { error } = await supabase
-    .from('user_settings')
-    .update({ 
-      initial_capital: capital,
-      account_balance: currentBalance  // 保持當前餘額不變
-    })
-    .eq('user_id', session.user.id);
-    
-  if (!error) {
-    setSettings({ 
-      initial_capital: capital,
-      account_balance: currentBalance 
-    });
-    setToast('Settings updated successfully');
-    setShowSettings(false);
-  } else {
-    setToast('Failed to update settings');
-    console.error(error);
-  }
-};
-
-const logout = () => { 
-  supabase?.auth.signOut(); 
-  setSession(null); 
-};
-
-  // Get unclaimed achievements
   const getUnclaimedAchievements = () => {
     return ACHIEVEMENTS_CONFIG.filter(ach => {
       const userAch = userAchievements.find(ua => ua.achievement_id === ach.id);
@@ -1066,35 +1106,35 @@ const logout = () => {
         <div className="workspace-label">WORKSPACE</div>
 
         <div className="sidebar-nav-wrapper">
-  <nav>
-    {navItems.map(({ id, label, icon: Icon }) => (
-      <button
-        key={id}
-        className={`nav-item ${view === id ? 'active' : ''}`}
-        onClick={() => { setView(id); setMobileNav(false); }}
-      >
-        <Icon size={18} />
-        <span>{label}</span>
-        {id === 'journal' && <span className="nav-count">{trades.length}</span>}
-        {id === 'achievements' && unclaimedCount > 0 && (
-  <span className="nav-achievement-badge">
-    ({unclaimedCount})
-  </span>
-)}
-      </button>
-    ))}
-  </nav>
-</div>
+          <nav>
+            {navItems.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                className={`nav-item ${view === id ? 'active' : ''}`}
+                onClick={() => { setView(id); setMobileNav(false); }}
+              >
+                <Icon size={18} />
+                <span>{label}</span>
+                {id === 'journal' && <span className="nav-count">{trades.length}</span>}
+                {id === 'achievements' && unclaimedCount > 0 && (
+                  <span className="nav-achievement-badge">
+                    ({unclaimedCount})
+                  </span>
+                )}
+              </button>
+            ))}
+          </nav>
+        </div>
 
         <div className="sidebar-bottom">
           <div className="pro-card" onClick={() => setShowSettings(true)} style={{ cursor: 'pointer' }}>
-  <div className="pro-icon">{stats ? LEVEL_CONFIG[stats.level - 1]?.icon || '📊' : '📊'}</div>
-  <div>
-    <strong>Level {stats?.level || 1}</strong>
-    <span className="capital-amount">${(settings.account_balance ?? settings.initial_capital).toLocaleString()}</span>
-  </div>
-  <ChevronDown size={15} />
-</div>
+            <div className="pro-icon">{stats ? LEVEL_CONFIG[stats.level - 1]?.icon || '📊' : '📊'}</div>
+            <div>
+              <strong>Level {stats?.level || 1}</strong>
+              <span className="capital-amount">${(settings.account_balance ?? settings.initial_capital).toLocaleString()}</span>
+            </div>
+            <ChevronDown size={15} />
+          </div>
           {unclaimedCount > 0 && (
             <div className="unclaimed-banner" onClick={() => setView('achievements')}>
               <Gift size={14} />
@@ -1327,17 +1367,11 @@ function RankingDisplay({ stats, trades }: { stats: UserStats | null; trades: Tr
   const levelInfo = LEVEL_CONFIG[stats.level - 1] || LEVEL_CONFIG[0];
   const nextLevel = LEVEL_CONFIG[stats.level] || null;
   
-  // 計算當前等級的起始 XP
   const currentLevelXp = levelInfo.xpRequired;
-  // 計算下個等級需要的 XP
   const nextLevelXp = nextLevel ? nextLevel.xpRequired : levelInfo.xpRequired;
-  // 計算已經獲得的 XP（相對於當前等級）
   const xpEarnedInLevel = stats.total_xp - currentLevelXp;
-  // 計算當前等級總共需要的 XP
   const xpNeededForLevel = nextLevel ? nextLevelXp - currentLevelXp : 1;
-  // 計算進度百分比
   const xpProgress = nextLevel ? (xpEarnedInLevel / xpNeededForLevel) * 100 : 100;
-  // 計算還需要多少 XP
   const xpRemaining = nextLevel ? nextLevelXp - stats.total_xp : 0;
 
   let bestStreak = 0;
@@ -1437,11 +1471,11 @@ function Overview({ trades, settings, stats, onAdd, onViewJournal }: { trades: T
   return (
     <>
       <PageHeader 
-  eyebrow="MONDAY, JUNE 24, 2024" 
-  title="Good morning, trader." 
-  description={`Account Balance: $${(settings.account_balance ?? settings.initial_capital).toLocaleString()}`}
-  action={<button className="primary-button" onClick={onAdd}><Plus size={17} /> Log a trade</button>} 
-/>
+        eyebrow="MONDAY, JUNE 24, 2024" 
+        title="Good morning, trader." 
+        description={`Account Balance: $${(settings.account_balance ?? settings.initial_capital).toLocaleString()}`}
+        action={<button className="primary-button" onClick={onAdd}><Plus size={17} /> Log a trade</button>} 
+      />
 
       <RankingDisplay stats={stats} trades={trades} />
 
@@ -1735,10 +1769,10 @@ function Analytics({ trades, settings, stats }: { trades: Trade[]; settings: Use
             <div className="score-bar"><span style={{ width: `${stats?.consistency_score || 0}%` }} /></div>
           </div>
           <div className="score-row" style={{ borderBottom: 'none', paddingBottom: '4px' }}>
-  <div><DollarSign size={16} /> Account balance</div>
-  <strong>${(settings.account_balance ?? settings.initial_capital).toLocaleString()}</strong>
-  <div className="score-bar"><span style={{ width: '100%' }} /></div>
-</div>
+            <div><DollarSign size={16} /> Account balance</div>
+            <strong>${(settings.account_balance ?? settings.initial_capital).toLocaleString()}</strong>
+            <div className="score-bar"><span style={{ width: '100%' }} /></div>
+          </div>
         </section>
       </div>
     </>
@@ -1815,7 +1849,6 @@ function AchievementsView({
     const isUnlocked = !!userAch;
     const isClaimed = userAch?.claimed || false;
     const isUnclaimed = isUnlocked && !isClaimed;
-    // ✅ 修復：檢查 requirement 是否存在
     const isCompleted = ach.requirement ? ach.requirement(trades) : false;
     const isActuallyUnlocked = isUnlocked || isCompleted;
 
@@ -2073,12 +2106,11 @@ function TradeForm({
   const [uploading, setUploading] = useState(false);
 
   const calculatePnLPercent = () => {
-  const pnlValue = Number(form.pnl);
-  // 使用 account_balance 而不是 initial_capital
-  const capital = settings.account_balance ?? settings.initial_capital ?? 1000;
-  if (!pnlValue || capital === 0) return 0;
-  return (pnlValue / capital) * 100;
-};
+    const pnlValue = Number(form.pnl);
+    const capital = settings.account_balance ?? settings.initial_capital ?? 1000;
+    if (!pnlValue || capital === 0) return 0;
+    return (pnlValue / capital) * 100;
+  };
 
   const update = (key: string, value: string) => setForm((current) => ({ ...current, [key]: value }));
 
