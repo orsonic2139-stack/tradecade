@@ -143,17 +143,23 @@ function App() {
   };
 
   const updateSettings = async (capital: number) => {
-    if (!supabase || !session) return;
-    const { error } = await supabase
-      .from('user_settings')
-      .update({ initial_capital: capital })
-      .eq('user_id', session.user.id);
-    if (!error) {
-      setSettings({ initial_capital: capital });
-      setToast('Settings updated');
-      setShowSettings(false);
-    }
-  };
+  if (!supabase || !session) return;
+  
+  // 接受任何數字（包括 0 和負數）
+  const { error } = await supabase
+    .from('user_settings')
+    .update({ initial_capital: capital })
+    .eq('user_id', session.user.id);
+  
+  if (!error) {
+    setSettings({ initial_capital: capital });
+    setToast('Settings updated successfully');
+    setShowSettings(false);
+  } else {
+    setToast('Failed to update settings');
+    console.error(error);
+  }
+};
 
   const logout = () => { supabase?.auth.signOut(); setSession(null); };
 
@@ -694,43 +700,114 @@ function CalendarView({ trades }: { trades: Trade[] }) {
 }
 
 function SettingsModal({ settings, onClose, onSave }: { settings: UserSettings; onClose: () => void; onSave: (capital: number) => void }) {
-  const [capital, setCapital] = useState(String(settings.initial_capital));
+  const [capital, setCapital] = useState(String(settings.initial_capital ?? ''));
+  const [error, setError] = useState('');
   
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    const value = Number(capital);
-    if (value > 0) onSave(value);
+    setError('');
+    
+    const trimmedValue = capital.trim();
+    
+    if (trimmedValue === '') {
+      setError('Please enter an amount');
+      return;
+    }
+    
+    const value = Number(trimmedValue);
+    
+    if (isNaN(value)) {
+      setError('Please enter a valid number');
+      return;
+    }
+    
+    // 接受任何數字
+    onSave(value);
+  };
+  
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSubmit(e);
+    }
   };
   
   return (
     <div className="modal-backdrop" onMouseDown={(e) => e.currentTarget === e.target && onClose()}>
-      <div className="trade-modal">
+      <div className="trade-modal" style={{ maxWidth: '420px' }}>
         <div className="modal-heading">
           <div>
             <div className="eyebrow">ACCOUNT SETTINGS</div>
-            <h2>Set initial capital</h2>
+            <h2 style={{ fontSize: '18px' }}>Set initial capital</h2>
           </div>
           <button className="icon-button" onClick={onClose}><X size={19} /></button>
         </div>
         <form onSubmit={handleSubmit}>
-          <label>
-            Initial Account Balance
-            <input 
-              type="number" 
-              value={capital} 
-              onChange={(e) => setCapital(e.target.value)} 
-              placeholder="10000" 
-              required 
-              min="1"
-              step="100"
-            />
-          </label>
-          <p style={{ color: '#788795', fontSize: '11px', marginTop: '-8px' }}>
-            This will be used to track your overall performance.
-          </p>
-          <div className="modal-actions">
+          <div style={{ marginBottom: '12px' }}>
+            <label style={{ display: 'grid', gap: '7px', color: '#93a2ae', fontSize: '10px' }}>
+              Initial Account Balance
+              <div style={{ position: 'relative' }}>
+                <span style={{ 
+                  position: 'absolute', 
+                  left: '12px', 
+                  top: '50%', 
+                  transform: 'translateY(-50%)',
+                  color: '#586675',
+                  fontSize: '14px',
+                  fontWeight: '600'
+                }}>$</span>
+                <input 
+                  type="number" 
+                  step="any"
+                  value={capital} 
+                  onChange={(e) => {
+                    setCapital(e.target.value);
+                    setError('');
+                  }}
+                  onKeyDown={handleKeyDown}
+                  placeholder="10000" 
+                  required 
+                  style={{ 
+                    paddingLeft: '28px',
+                    width: '100%',
+                    border: error ? '1px solid #ee8077' : '1px solid #2c3945',
+                    background: '#0f161d',
+                    outline: 'none',
+                    color: '#e2ebef',
+                    borderRadius: '6px',
+                    padding: '10px 11px 10px 28px',
+                    fontSize: '14px',
+                    transition: '0.2s'
+                  }}
+                />
+              </div>
+            </label>
+            {error && (
+              <div style={{ 
+                color: '#ee8077', 
+                fontSize: '11px', 
+                marginTop: '6px',
+                padding: '6px 10px',
+                background: '#3a292c',
+                borderRadius: '4px'
+              }}>
+                ⚠️ {error}
+              </div>
+            )}
+            <p style={{ 
+              color: '#788795', 
+              fontSize: '11px', 
+              marginTop: '8px',
+              lineHeight: '1.5'
+            }}>
+              This will be used to track your overall performance.<br />
+              You can enter any amount (including 0).
+            </p>
+          </div>
+          <div className="modal-actions" style={{ marginTop: '8px' }}>
             <button type="button" className="secondary-button" onClick={onClose}>Cancel</button>
-            <button className="primary-button" type="submit">Save settings <ArrowUpRight size={16} /></button>
+            <button className="primary-button" type="submit">
+              Save settings <ArrowUpRight size={16} />
+            </button>
           </div>
         </form>
       </div>
