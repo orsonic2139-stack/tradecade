@@ -482,16 +482,20 @@ const checkAndUnlockAchievements = async (userId: string, currentTrades: Trade[]
       if (error) {
         console.error('Failed to insert achievements:', error);
       } else {
-        const { data: unclaimedCount } = await supabase
+        // ✅ 重新計算 unclaimed_achievements
+        const { data: unclaimedData } = await supabase
           .from('user_achievements')
-          .select('id', { count: 'exact', head: true })
+          .select('id', { count: 'exact' })
           .eq('user_id', userId)
           .eq('claimed', false);
+
+        const unclaimedCount = unclaimedData?.length || 0;
+        console.log(`📊 Unclaimed achievements: ${unclaimedCount}`);
 
         await supabase
           .from('user_stats')
           .update({ 
-            unclaimed_achievements: unclaimedCount?.length || 0
+            unclaimed_achievements: unclaimedCount
           })
           .eq('user_id', userId);
         
@@ -737,17 +741,19 @@ const claimAchievement = async (achievementId: string) => {
           })
           .eq('user_id', session.user.id);
         
-        // 5. 更新 unclaimed_achievements 計數
-        const { data: unclaimedCount } = await supabase
+        // ✅ 5. 重新計算 unclaimed_achievements
+        const { data: unclaimedData } = await supabase
           .from('user_achievements')
-          .select('id', { count: 'exact', head: true })
+          .select('id', { count: 'exact' })
           .eq('user_id', session.user.id)
           .eq('claimed', false);
+
+        const unclaimedCount = unclaimedData?.length || 0;
 
         await supabase
           .from('user_stats')
           .update({ 
-            unclaimed_achievements: unclaimedCount?.length || 0
+            unclaimed_achievements: unclaimedCount
           })
           .eq('user_id', session.user.id);
         
