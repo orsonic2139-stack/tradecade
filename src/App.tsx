@@ -1815,7 +1815,8 @@ function AchievementsView({
     const isUnlocked = !!userAch;
     const isClaimed = userAch?.claimed || false;
     const isUnclaimed = isUnlocked && !isClaimed;
-    const isCompleted = ach.requirement(trades);
+    // ✅ 修復：檢查 requirement 是否存在
+    const isCompleted = ach.requirement ? ach.requirement(trades) : false;
     const isActuallyUnlocked = isUnlocked || isCompleted;
 
     return {
@@ -1836,23 +1837,22 @@ function AchievementsView({
   });
 
   const categories: Record<string, { label: string; icon: string }> = {
-  trades: { label: 'Trading Volume', icon: '📊' },
-  pnl: { label: 'Profit & Loss', icon: '💰' },
-  streak: { label: 'Streaks', icon: '🔥' },
-  risk: { label: 'Risk Management', icon: '🛡️' },
-  discipline: { label: 'Discipline', icon: '📝' },
-  special: { label: 'Special', icon: '🌟' },
-  monthly: { label: 'Monthly', icon: '📆' },
-  time: { label: 'Time', icon: '⏰' },
-  market: { label: 'Market', icon: '🌍' },
-  mindset: { label: 'Mindset', icon: '🧠' },
-  fun: { label: 'Fun', icon: '🎮' },
-};
+    trades: { label: 'Trading Volume', icon: '📊' },
+    pnl: { label: 'Profit & Loss', icon: '💰' },
+    streak: { label: 'Streaks', icon: '🔥' },
+    risk: { label: 'Risk Management', icon: '🛡️' },
+    discipline: { label: 'Discipline', icon: '📝' },
+    special: { label: 'Special', icon: '🌟' },
+    monthly: { label: 'Monthly', icon: '📆' },
+    time: { label: 'Time', icon: '⏰' },
+    market: { label: 'Market', icon: '🌍' },
+    mindset: { label: 'Mindset', icon: '🧠' },
+    fun: { label: 'Fun', icon: '🎮' },
+  };
 
   const totalUnclaimed = achievementsWithStatus.filter(a => a.isUnclaimed).length;
   const totalUnlocked = achievementsWithStatus.filter(a => a.isUnlocked).length;
 
-  // ✅ Claim All 功能 - 必須在 return 之前定義
   const handleClaimAll = async () => {
     if (claimingAll) return;
     setClaimingAll(true);
@@ -1861,7 +1861,6 @@ function AchievementsView({
     
     for (const ach of unclaimedAchievements) {
       await onClaim(ach.id);
-      // 等待一小段時間避免請求過快
       await new Promise(resolve => setTimeout(resolve, 300));
     }
     
