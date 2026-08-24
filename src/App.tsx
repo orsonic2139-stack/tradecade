@@ -287,50 +287,57 @@ function App() {
   return (
     <div className="app-shell">
       <aside className={`sidebar ${mobileNav ? 'is-open' : ''}`}>
-        <div className="sidebar-top">
-          <div className="brand">
-            <div className="brand-mark"><Activity size={19} /></div>
-            <span>trade<span>cade</span></span>
-          </div>
-          <button className="icon-button mobile-close" onClick={() => setMobileNav(false)}><X size={18} /></button>
-        </div>
-        <div className="workspace-label">WORKSPACE</div>
-        <nav>
-          {navItems.map(({ id, label, icon: Icon }) => (
-            <button 
-              key={id} 
-              className={`nav-item ${view === id ? 'active' : ''}`} 
-              onClick={() => { setView(id); setMobileNav(false); }}
-            >
-              <Icon size={18} />
-              <span>{label}</span>
-              {id === 'journal' && <span className="nav-count">{trades.length}</span>}
-            </button>
-          ))}
-        </nav>
-        <div className="sidebar-bottom">
-          <div className="pro-card" onClick={() => setShowSettings(true)} style={{ cursor: 'pointer' }}>
-            <div className="pro-icon">{stats ? LEVEL_CONFIG[stats.level - 1]?.icon || '📊' : '📊'}</div>
-            <div>
-              <strong>Level {stats?.level || 1}</strong>
-              <span className="capital-amount">${settings.initial_capital.toLocaleString()}</span>
-            </div>
-            <ChevronDown size={15} />
-          </div>
-          <button className="nav-item" onClick={() => setShowSettings(true)}>
-            <Settings size={18} />
-            <span>Settings</span>
-          </button>
-          <button className="profile" onClick={logout}>
-            <div className="avatar">{initials(email)}</div>
-            <div>
-              <strong>{email.split('@')[0]}</strong>
-              <span>Sign out</span>
-            </div>
-            <LogOut size={15} />
-          </button>
-        </div>
-      </aside>
+  <div className="sidebar-top">
+    <div className="brand">
+      <div className="brand-mark"><Activity size={19} /></div>
+      <span>trade<span>cade</span></span>
+    </div>
+    <button className="icon-button mobile-close" onClick={() => setMobileNav(false)}><X size={18} /></button>
+  </div>
+  
+  <div className="workspace-label">WORKSPACE</div>
+  
+  {/* 可滾動的 nav 區域 */}
+  <div className="sidebar-nav-wrapper">
+    <nav>
+      {navItems.map(({ id, label, icon: Icon }) => (
+        <button 
+          key={id} 
+          className={`nav-item ${view === id ? 'active' : ''}`} 
+          onClick={() => { setView(id); setMobileNav(false); }}
+        >
+          <Icon size={18} />
+          <span>{label}</span>
+          {id === 'journal' && <span className="nav-count">{trades.length}</span>}
+        </button>
+      ))}
+    </nav>
+  </div>
+  
+  {/* 底部 - 固定不滾動 */}
+  <div className="sidebar-bottom">
+    <div className="pro-card" onClick={() => setShowSettings(true)}>
+      <div className="pro-icon">{stats ? LEVEL_CONFIG[stats.level - 1]?.icon || '📊' : '📊'}</div>
+      <div>
+        <strong>Level {stats?.level || 1}</strong>
+        <span className="capital-amount">${settings.initial_capital.toLocaleString()}</span>
+      </div>
+      <ChevronDown size={15} />
+    </div>
+    <button className="nav-item" onClick={() => setShowSettings(true)}>
+      <Settings size={18} />
+      <span>Settings</span>
+    </button>
+    <button className="profile" onClick={logout}>
+      <div className="avatar">{initials(email)}</div>
+      <div>
+        <strong>{email.split('@')[0]}</strong>
+        <span>Sign out</span>
+      </div>
+      <LogOut size={15} />
+    </button>
+  </div>
+</aside>
       {mobileNav && <button className="mobile-overlay" onClick={() => setMobileNav(false)} aria-label="Close navigation" />}
       <main className="main-content">
         <header className="topbar">
