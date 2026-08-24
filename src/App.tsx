@@ -634,23 +634,25 @@ const logout = () => {
         <div className="workspace-label">WORKSPACE</div>
 
         <div className="sidebar-nav-wrapper">
-          <nav>
-            {navItems.map(({ id, label, icon: Icon }) => (
-              <button
-                key={id}
-                className={`nav-item ${view === id ? 'active' : ''}`}
-                onClick={() => { setView(id); setMobileNav(false); }}
-              >
-                <Icon size={18} />
-                <span>{label}</span>
-                {id === 'journal' && <span className="nav-count">{trades.length}</span>}
-                {id === 'achievements' && unclaimedCount > 0 && (
-                  <span className="nav-badge">{unclaimedCount}</span>
-                )}
-              </button>
-            ))}
-          </nav>
-        </div>
+  <nav>
+    {navItems.map(({ id, label, icon: Icon }) => (
+      <button
+        key={id}
+        className={`nav-item ${view === id ? 'active' : ''}`}
+        onClick={() => { setView(id); setMobileNav(false); }}
+      >
+        <Icon size={18} />
+        <span>{label}</span>
+        {id === 'journal' && <span className="nav-count">{trades.length}</span>}
+        {id === 'achievements' && unclaimedCount > 0 && (
+          <span className="nav-achievement-badge">
+            ({unclaimedCount} New Achievement{unclaimedCount > 1 ? 's' : ''})
+          </span>
+        )}
+      </button>
+    ))}
+  </nav>
+</div>
 
         <div className="sidebar-bottom">
           <div className="pro-card" onClick={() => setShowSettings(true)} style={{ cursor: 'pointer' }}>
@@ -892,8 +894,19 @@ function RankingDisplay({ stats, trades }: { stats: UserStats | null; trades: Tr
 
   const levelInfo = LEVEL_CONFIG[stats.level - 1] || LEVEL_CONFIG[0];
   const nextLevel = LEVEL_CONFIG[stats.level] || null;
-  const xpProgress = nextLevel ? (stats.total_xp - levelInfo.xpRequired) / (nextLevel.xpRequired - levelInfo.xpRequired) * 100 : 100;
-  const xpToNext = nextLevel ? nextLevel.xpRequired - stats.total_xp : 0;
+  
+  // 計算當前等級的起始 XP
+  const currentLevelXp = levelInfo.xpRequired;
+  // 計算下個等級需要的 XP
+  const nextLevelXp = nextLevel ? nextLevel.xpRequired : levelInfo.xpRequired;
+  // 計算已經獲得的 XP（相對於當前等級）
+  const xpEarnedInLevel = stats.total_xp - currentLevelXp;
+  // 計算當前等級總共需要的 XP
+  const xpNeededForLevel = nextLevel ? nextLevelXp - currentLevelXp : 1;
+  // 計算進度百分比
+  const xpProgress = nextLevel ? (xpEarnedInLevel / xpNeededForLevel) * 100 : 100;
+  // 計算還需要多少 XP
+  const xpRemaining = nextLevel ? nextLevelXp - stats.total_xp : 0;
 
   let bestStreak = 0;
   let streak = 0;
@@ -923,9 +936,20 @@ function RankingDisplay({ stats, trades }: { stats: UserStats | null; trades: Tr
           <div className="xp-bar">
             <div className="xp-fill" style={{ width: `${Math.min(100, xpProgress)}%` }} />
           </div>
-          <span className="xp-text">
-            {nextLevel ? `${xpToNext.toLocaleString()} XP to ${nextLevel.title}` : 'MAX LEVEL'}
-          </span>
+          <div className="xp-text">
+            {nextLevel ? (
+              <>
+                <div className="xp-text-row">
+                  {stats.total_xp.toLocaleString()} / {nextLevelXp.toLocaleString()} XP
+                </div>
+                <div className="xp-text-row xp-remaining">
+                  {xpRemaining.toLocaleString()} XP more to {nextLevel.title}
+                </div>
+              </>
+            ) : (
+              <div className="xp-text-row">👑 MAX LEVEL</div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -1359,7 +1383,6 @@ function AchievementsView({
     const isClaimed = userAch?.claimed || false;
     const isUnclaimed = isUnlocked && !isClaimed;
     const isCompleted = ach.requirement(trades);
-    // 如果成就已解鎖但尚未領取，保持解鎖狀態
     const isActuallyUnlocked = isUnlocked || isCompleted;
 
     return {
@@ -1379,7 +1402,7 @@ function AchievementsView({
     return true;
   });
 
-  const categories = {
+  const categories: Record<string, { label: string; icon: string }> = {
     trades: { label: 'Trading Volume', icon: '📊' },
     pnl: { label: 'Profit & Loss', icon: '💰' },
     streak: { label: 'Streaks', icon: '🔥' },
@@ -1389,23 +1412,24 @@ function AchievementsView({
   };
 
   const totalUnclaimed = achievementsWithStatus.filter(a => a.isUnclaimed).length;
+  const totalUnlocked = achievementsWithStatus.filter(a => a.isUnlocked).length;
 
   return (
     <>
       <PageHeader
         eyebrow="ACHIEVEMENTS"
         title="Your Trading Achievements"
-        description={`${totalUnclaimed} achievements ready to claim!`}
+        description="Complete challenges to earn XP and level up!"
         action={
           <div className="achievement-stats">
             <span className="achievement-count">
               <Award size={16} />
-              {achievementsWithStatus.filter(a => a.isUnlocked).length}/{ACHIEVEMENTS_CONFIG.length}
+              <span className="count-number">{totalUnlocked}</span> / {ACHIEVEMENTS_CONFIG.length}
             </span>
             {totalUnclaimed > 0 && (
-              <span className="unclaimed-count">
-                <Gift size={14} />
-                {totalUnclaimed} to claim
+              <span className="unclaimed-count-badge">
+                <span className="gift-icon">🎁</span>
+                {totalUnclaimed} New Achievement{totalUnclaimed > 1 ? 's' : ''} Ready!
               </span>
             )}
           </div>
@@ -1414,11 +1438,15 @@ function AchievementsView({
 
       <div className="achievement-filters">
         <button className={filter === 'all' ? 'active' : ''} onClick={() => setFilter('all')}>All</button>
-        <button className={filter === 'unlocked' ? 'active' : ''} onClick={() => setFilter('unlocked')}>Unlocked</button>
-        <button className={filter === 'unclaimed' ? 'active' : ''} onClick={() => setFilter('unclaimed')}>
-          To Claim {totalUnclaimed > 0 && `(${totalUnclaimed})`}
+        <button className={filter === 'unlocked' ? 'active' : ''} onClick={() => setFilter('unlocked')}>
+          Unlocked ({totalUnlocked})
         </button>
-        <button className={filter === 'locked' ? 'active' : ''} onClick={() => setFilter('locked')}>Locked</button>
+        <button className={filter === 'unclaimed' ? 'active' : ''} onClick={() => setFilter('unclaimed')}>
+          🎁 Ready to Claim ({totalUnclaimed})
+        </button>
+        <button className={filter === 'locked' ? 'active' : ''} onClick={() => setFilter('locked')}>
+          Locked ({ACHIEVEMENTS_CONFIG.length - totalUnlocked})
+        </button>
       </div>
 
       <div className="achievements-grid">
@@ -1430,23 +1458,32 @@ function AchievementsView({
             <div className="achievement-icon">{ach.icon}</div>
             <div className="achievement-info">
               <div className="achievement-header">
-                <h4>{ach.name}</h4>
+                <h4>
+                  {ach.name}
+                  {ach.isUnclaimed && <span className="unclaimed-badge">Ready to Claim!</span>}
+                </h4>
                 <span className="achievement-xp">+{ach.rewardXp} XP</span>
               </div>
               <p>{ach.description}</p>
               <div className="achievement-meta">
-                <span className="achievement-category">{categories[ach.category]?.label || ach.category}</span>
-                {ach.isUnlocked && ach.isClaimed && <span className="achievement-status claimed">✓ Claimed</span>}
+                <span className="achievement-category-tag">
+                  {categories[ach.category]?.icon} {categories[ach.category]?.label || ach.category}
+                </span>
+                {ach.isUnlocked && ach.isClaimed && (
+                  <span className="achievement-status claimed">✅ Claimed</span>
+                )}
                 {ach.isUnclaimed && (
                   <button
                     className="claim-button"
                     onClick={() => onClaim(ach.id)}
                     disabled={claiming === ach.id}
                   >
-                    {claiming === ach.id ? 'Claiming...' : 'Claim Reward'}
+                    {claiming === ach.id ? '⏳ Claiming...' : '🎯 Claim Reward'}
                   </button>
                 )}
-                {!ach.isUnlocked && <span className="achievement-status locked">🔒 Locked</span>}
+                {!ach.isUnlocked && (
+                  <span className="achievement-status locked">🔒 Locked</span>
+                )}
               </div>
             </div>
           </div>

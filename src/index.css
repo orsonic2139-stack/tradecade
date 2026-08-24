@@ -701,10 +701,28 @@ td strong { display: block; font: 10px 'DM Mono'; }
 
 .xp-text {
   display: block;
-  color: #788795;
-  font-size: 10px;
   margin-top: 4px;
   font-family: 'DM Mono', monospace;
+  text-align: right;
+}
+
+.xp-text .xp-text-row {
+  display: block;
+  font-size: 11px;
+  color: #b7c3cd;
+  line-height: 1.5;
+}
+
+.xp-text .xp-text-row.xp-remaining {
+  font-size: 10px;
+  color: #48d9a9;
+  font-weight: 500;
+}
+
+/* 如果喜歡更明顯的樣式，可以加上 */
+.xp-text .xp-text-row.xp-remaining::before {
+  content: '→ ';
+  color: #48d9a9;
 }
 
 .ranking-stats {
@@ -1231,6 +1249,175 @@ td strong { display: block; font: 10px 'DM Mono'; }
   }
   
   .achievement-filters button {
+    font-size: 10px;
+    padding: 4px 10px;
+  }
+}
+
+/* ============================================
+   ACHIEVEMENT NAV BADGE - 青色圓角框架
+   ============================================ */
+
+.nav-achievement-badge {
+  margin-left: auto;
+  background: transparent;
+  color: #48d9a9;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 10px;
+  border: 1.5px solid #48d9a9;
+  border-radius: 20px;
+  font-family: 'Manrope', sans-serif;
+  white-space: nowrap;
+  animation: pulse-achievement 2s infinite;
+  letter-spacing: 0.3px;
+}
+
+@keyframes pulse-achievement {
+  0%, 100% { 
+    border-color: #48d9a9;
+    color: #48d9a9;
+    box-shadow: 0 0 8px rgba(72, 217, 169, 0.1);
+  }
+  50% { 
+    border-color: #7ae8c0;
+    color: #7ae8c0;
+    box-shadow: 0 0 20px rgba(72, 217, 169, 0.25);
+  }
+}
+
+/* 成就頁面的 Claim 按鈕樣式 */
+.claim-button {
+  padding: 4px 16px;
+  background: linear-gradient(135deg, #48d9a9, #24b88a);
+  border: none;
+  border-radius: 6px;
+  color: #0d1117;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Manrope', sans-serif;
+}
+
+.claim-button:hover:not(:disabled) {
+  transform: scale(1.05);
+  box-shadow: 0 4px 20px rgba(72, 217, 169, 0.35);
+}
+
+.claim-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.claim-button.claimed {
+  background: #1a232e;
+  color: #586675;
+  cursor: default;
+  border: 1px solid #2a3540;
+}
+
+.claim-button.claimed:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* 成就卡片 - 未領取狀態高亮 */
+.achievement-card.unclaimed {
+  border-color: #48d9a9;
+  background: linear-gradient(135deg, #0d1a18, #0f1f1a);
+  box-shadow: 0 0 30px rgba(72, 217, 169, 0.05);
+  position: relative;
+}
+
+.achievement-card.unclaimed::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  right: -1px;
+  bottom: -1px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #48d9a9, transparent, #48d9a9);
+  z-index: -1;
+  opacity: 0.3;
+}
+
+.achievement-card .unclaimed-badge {
+  background: #48d9a9;
+  color: #0d1117;
+  font-size: 8px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* 成就列表頂部的統計 */
+.achievement-stats {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.achievement-count {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #b7c3cd;
+  font-size: 12px;
+  background: #1a232e;
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid #2a3540;
+}
+
+.achievement-count .count-number {
+  color: #48d9a9;
+  font-weight: 700;
+}
+
+.unclaimed-count-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #48d9a9;
+  font-size: 12px;
+  background: transparent;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1.5px solid #48d9a9;
+  font-weight: 600;
+  animation: pulse-achievement 2s infinite;
+}
+
+.unclaimed-count-badge .gift-icon {
+  font-size: 14px;
+}
+
+/* 成就分類標籤 */
+.achievement-category-tag {
+  font-size: 9px;
+  color: #586675;
+  background: #1a232e;
+  padding: 2px 10px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+/* 響應式調整 */
+@media (max-width: 768px) {
+  .nav-achievement-badge {
+    font-size: 8px;
+    padding: 1px 8px;
+  }
+  
+  .unclaimed-count-badge {
     font-size: 10px;
     padding: 4px 10px;
   }
