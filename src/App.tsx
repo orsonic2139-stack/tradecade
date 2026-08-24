@@ -851,10 +851,10 @@ const logout = () => {
         <span>{label}</span>
         {id === 'journal' && <span className="nav-count">{trades.length}</span>}
         {id === 'achievements' && unclaimedCount > 0 && (
-          <span className="nav-achievement-badge">
-            ({unclaimedCount} New Achievement{unclaimedCount > 1 ? 's' : ''})
-          </span>
-        )}
+  <span className="nav-achievement-badge">
+    ({unclaimedCount})
+  </span>
+)}
       </button>
     ))}
   </nav>
