@@ -39,6 +39,7 @@ type Trade = {
 
 type UserSettings = {
   initial_capital: number;
+  account_balance?: number;
   ranking_enabled?: boolean;
 };
 
@@ -581,12 +582,23 @@ const claimAchievement = async (achievementId: string) => {
 
 const updateSettings = async (capital: number) => {
   if (!supabase || !session) return;
+  
+  // 獲取當前的 account_balance 或使用初始資金
+  const currentBalance = settings.account_balance ?? capital;
+  
   const { error } = await supabase
     .from('user_settings')
-    .update({ initial_capital: capital })
+    .update({ 
+      initial_capital: capital,
+      account_balance: currentBalance  // 保持當前餘額不變
+    })
     .eq('user_id', session.user.id);
+    
   if (!error) {
-    setSettings({ initial_capital: capital });
+    setSettings({ 
+      initial_capital: capital,
+      account_balance: currentBalance 
+    });
     setToast('Settings updated successfully');
     setShowSettings(false);
   } else {
@@ -642,13 +654,13 @@ const logout = () => {
 
         <div className="sidebar-bottom">
           <div className="pro-card" onClick={() => setShowSettings(true)} style={{ cursor: 'pointer' }}>
-            <div className="pro-icon">{stats ? LEVEL_CONFIG[stats.level - 1]?.icon || '📊' : '📊'}</div>
-            <div>
-              <strong>Level {stats?.level || 1}</strong>
-              <span className="capital-amount">${settings.initial_capital.toLocaleString()}</span>
-            </div>
-            <ChevronDown size={15} />
-          </div>
+  <div className="pro-icon">{stats ? LEVEL_CONFIG[stats.level - 1]?.icon || '📊' : '📊'}</div>
+  <div>
+    <strong>Level {stats?.level || 1}</strong>
+    <span className="capital-amount">${(settings.account_balance ?? settings.initial_capital).toLocaleString()}</span>
+  </div>
+  <ChevronDown size={15} />
+</div>
           {unclaimedCount > 0 && (
             <div className="unclaimed-banner" onClick={() => setView('achievements')}>
               <Gift size={14} />
@@ -968,12 +980,12 @@ function Overview({ trades, settings, stats, onAdd, onViewJournal }: { trades: T
 
   return (
     <>
-      <PageHeader
-        eyebrow="MONDAY, JUNE 24, 2024"
-        title="Good morning, trader."
-        description={`Account Balance: $${settings.initial_capital.toLocaleString()}`}
-        action={<button className="primary-button" onClick={onAdd}><Plus size={17} /> Log a trade</button>}
-      />
+      <PageHeader 
+  eyebrow="MONDAY, JUNE 24, 2024" 
+  title="Good morning, trader." 
+  description={`Account Balance: $${(settings.account_balance ?? settings.initial_capital).toLocaleString()}`}
+  action={<button className="primary-button" onClick={onAdd}><Plus size={17} /> Log a trade</button>} 
+/>
 
       <RankingDisplay stats={stats} trades={trades} />
 
@@ -1267,10 +1279,10 @@ function Analytics({ trades, settings, stats }: { trades: Trade[]; settings: Use
             <div className="score-bar"><span style={{ width: `${stats?.consistency_score || 0}%` }} /></div>
           </div>
           <div className="score-row" style={{ borderBottom: 'none', paddingBottom: '4px' }}>
-            <div><DollarSign size={16} /> Account balance</div>
-            <strong>${settings.initial_capital.toLocaleString()}</strong>
-            <div className="score-bar"><span style={{ width: '100%' }} /></div>
-          </div>
+  <div><DollarSign size={16} /> Account balance</div>
+  <strong>${(settings.account_balance ?? settings.initial_capital).toLocaleString()}</strong>
+  <div className="score-bar"><span style={{ width: '100%' }} /></div>
+</div>
         </section>
       </div>
     </>
@@ -1560,12 +1572,12 @@ function TradeForm({
   const [uploading, setUploading] = useState(false);
 
   const calculatePnLPercent = () => {
-    const pnlValue = Number(form.pnl);
-    if (!settings || typeof settings.initial_capital !== 'number') return 0;
-    const capital = settings.initial_capital || 1000;
-    if (!pnlValue || capital === 0) return 0;
-    return (pnlValue / capital) * 100;
-  };
+  const pnlValue = Number(form.pnl);
+  // 使用 account_balance 而不是 initial_capital
+  const capital = settings.account_balance ?? settings.initial_capital ?? 1000;
+  if (!pnlValue || capital === 0) return 0;
+  return (pnlValue / capital) * 100;
+};
 
   const update = (key: string, value: string) => setForm((current) => ({ ...current, [key]: value }));
 
