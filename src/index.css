@@ -1506,3 +1506,19 @@ td strong { display: block; font: 10px 'DM Mono'; }
     padding: 8px;
   }
 }
+
+/* R:R 欄位樣式 */
+.price-cell.rr-positive {
+  color: #48d9a9;
+  font-weight: 600;
+}
+
+.price-cell.rr-negative {
+  color: #ee8077;
+  font-weight: 600;
+}
+
+.price-cell.rr-neutral {
+  color: #f0b96a;
+  font-weight: 600;
+}

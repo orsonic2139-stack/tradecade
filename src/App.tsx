@@ -529,6 +529,34 @@ const money = (value: number) => `${value >= 0 ? '+' : '-'}$${Math.abs(value).to
 const initials = (email: string) => email.slice(0, 2).toUpperCase();
 
 // ============================================
+// R:R 計算函數
+// ============================================
+
+const calculateRR = (trade: Trade): string => {
+  const { entry_price, exit_price, stop_loss, side } = trade;
+  
+  // 如果沒有停損，回傳 "N/A"
+  if (!stop_loss || stop_loss === 0) return 'N/A';
+  
+  let risk: number;
+  let reward: number;
+  
+  if (side === 'Long') {
+    risk = entry_price - stop_loss;
+    reward = exit_price - entry_price;
+  } else {
+    risk = stop_loss - entry_price;
+    reward = entry_price - exit_price;
+  }
+  
+  // 防止除以零或負數
+  if (risk <= 0) return 'N/A';
+  
+  const ratio = reward / risk;
+  return `1:${ratio.toFixed(2)}`;
+};
+
+// ============================================
 // APP COMPONENT
 // ============================================
 
@@ -1632,6 +1660,7 @@ function TradeTable({ trades, compact = false, onEdit, onDelete }: { trades: Tra
             <th>Setup</th>
             <th>Entry → Exit</th>
             <th>SL</th>
+            <th>R:R</th>
             <th>Date</th>
             <th>Result</th>
             {!compact && <th />}
@@ -1661,6 +1690,9 @@ function TradeTable({ trades, compact = false, onEdit, onDelete }: { trades: Tra
               </td>
               <td className="price-cell">
                 {trade.stop_loss ? `$${trade.stop_loss.toLocaleString()}` : '—'}
+              </td>
+              <td className="price-cell" style={{ color: '#48d9a9', fontWeight: 600 }}>
+                {calculateRR(trade)}
               </td>
               <td className="date-cell">{new Date(trade.trade_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</td>
               <td>
