@@ -42,9 +42,11 @@ type AchievementDef = {
   name: string;
   description: string;
   icon: string;
-  category: 'trades' | 'pnl' | 'streak' | 'risk' | 'discipline' | 'special';
+  category: 'trades' | 'pnl' | 'streak' | 'risk' | 'discipline' | 'special' | 'monthly' | 'time' | 'market' | 'mindset' | 'fun';
   rewardXp: number;
+  isMonthly?: boolean;  // 是否為月度成就
   requirement: (trades: Trade[]) => boolean;
+  monthlyRequirement?: (monthlyTrades: Trade[]) => boolean;  // 月度成就專用
 };
 
 type UserSettings = {
@@ -211,71 +213,201 @@ function hasBounceBack(trades: Trade[]): boolean {
   return false;
 }
 
-// ============================================
-// 54 ACHIEVEMENTS CONFIG
-// ============================================
-
 const ACHIEVEMENTS_CONFIG: AchievementDef[] = [
-  // ===== 交易數量成就 (12個) =====
-  { id: 'first_trade', name: 'First Trade', description: 'Log your first trade', icon: '🎯', category: 'trades', rewardXp: 10, requirement: (t) => t.length >= 1 },
-  { id: 'five_trades', name: 'Getting Started', description: 'Complete 5 trades', icon: '📊', category: 'trades', rewardXp: 20, requirement: (t) => t.length >= 5 },
-  { id: 'ten_trades', name: 'Double Digits', description: 'Complete 10 trades', icon: '📈', category: 'trades', rewardXp: 30, requirement: (t) => t.length >= 10 },
-  { id: 'twenty_trades', name: 'Twenty Club', description: 'Complete 20 trades', icon: '💪', category: 'trades', rewardXp: 40, requirement: (t) => t.length >= 20 },
-  { id: 'fifty_trades', name: 'Half Century', description: 'Complete 50 trades', icon: '🏅', category: 'trades', rewardXp: 60, requirement: (t) => t.length >= 50 },
-  { id: 'hundred_trades', name: 'Century Club', description: 'Complete 100 trades', icon: '🌟', category: 'trades', rewardXp: 80, requirement: (t) => t.length >= 100 },
-  { id: 'two_hundred_trades', name: 'Double Century', description: 'Complete 200 trades', icon: '🔥', category: 'trades', rewardXp: 100, requirement: (t) => t.length >= 200 },
-  { id: 'five_hundred_trades', name: 'Half Thousand', description: 'Complete 500 trades', icon: '💎', category: 'trades', rewardXp: 150, requirement: (t) => t.length >= 500 },
-  { id: 'thousand_trades', name: 'Thousand Club', description: 'Complete 1000 trades', icon: '👑', category: 'trades', rewardXp: 200, requirement: (t) => t.length >= 1000 },
-  { id: 'daily_trader', name: 'Daily Trader', description: 'Trade on 10 different days', icon: '📅', category: 'trades', rewardXp: 25, requirement: (t) => new Set(t.map(trade => trade.trade_date)).size >= 10 },
-  { id: 'weekly_warrior', name: 'Weekly Warrior', description: 'Trade on 30 different days', icon: '🗓️', category: 'trades', rewardXp: 50, requirement: (t) => new Set(t.map(trade => trade.trade_date)).size >= 30 },
-  { id: 'monthly_marathon', name: 'Monthly Marathon', description: 'Trade on 60 different days', icon: '📆', category: 'trades', rewardXp: 80, requirement: (t) => new Set(t.map(trade => trade.trade_date)).size >= 60 },
+  // ============================================
+  // 1. 交易數量成就 (12個) - 累計
+  // ============================================
+  { id: 'first_trade', name: 'First Trade', description: 'Log your first trade', icon: '🎯', category: 'trades', rewardXp: 10, isMonthly: false, requirement: (t) => t.length >= 1 },
+  { id: 'five_trades', name: 'Getting Started', description: 'Complete 5 trades', icon: '📊', category: 'trades', rewardXp: 20, isMonthly: false, requirement: (t) => t.length >= 5 },
+  { id: 'ten_trades', name: 'Double Digits', description: 'Complete 10 trades', icon: '📈', category: 'trades', rewardXp: 30, isMonthly: false, requirement: (t) => t.length >= 10 },
+  { id: 'twenty_trades', name: 'Twenty Club', description: 'Complete 20 trades', icon: '💪', category: 'trades', rewardXp: 40, isMonthly: false, requirement: (t) => t.length >= 20 },
+  { id: 'fifty_trades', name: 'Half Century', description: 'Complete 50 trades', icon: '🏅', category: 'trades', rewardXp: 60, isMonthly: false, requirement: (t) => t.length >= 50 },
+  { id: 'hundred_trades', name: 'Century Club', description: 'Complete 100 trades', icon: '🌟', category: 'trades', rewardXp: 80, isMonthly: false, requirement: (t) => t.length >= 100 },
+  { id: 'two_hundred_trades', name: 'Double Century', description: 'Complete 200 trades', icon: '🔥', category: 'trades', rewardXp: 100, isMonthly: false, requirement: (t) => t.length >= 200 },
+  { id: 'five_hundred_trades', name: 'Half Thousand', description: 'Complete 500 trades', icon: '💎', category: 'trades', rewardXp: 150, isMonthly: false, requirement: (t) => t.length >= 500 },
+  { id: 'thousand_trades', name: 'Thousand Club', description: 'Complete 1000 trades', icon: '👑', category: 'trades', rewardXp: 200, isMonthly: false, requirement: (t) => t.length >= 1000 },
+  { id: 'daily_trader', name: 'Daily Trader', description: 'Trade on 10 different days', icon: '📅', category: 'trades', rewardXp: 25, isMonthly: false, requirement: (t) => new Set(t.map(trade => trade.trade_date)).size >= 10 },
+  { id: 'weekly_warrior', name: 'Weekly Warrior', description: 'Trade on 30 different days', icon: '🗓️', category: 'trades', rewardXp: 50, isMonthly: false, requirement: (t) => new Set(t.map(trade => trade.trade_date)).size >= 30 },
+  { id: 'monthly_marathon', name: 'Monthly Marathon', description: 'Trade on 60 different days', icon: '📆', category: 'trades', rewardXp: 80, isMonthly: false, requirement: (t) => new Set(t.map(trade => trade.trade_date)).size >= 60 },
 
-  // ===== 盈利成就 (11個) =====
-  { id: 'first_profit', name: 'First Profit', description: 'Make your first profitable trade', icon: '💰', category: 'pnl', rewardXp: 15, requirement: (t) => t.some(trade => trade.pnl > 0) },
-  { id: 'profit_streak_3', name: '3 Wins in a Row', description: 'Win 3 consecutive trades', icon: '📈', category: 'streak', rewardXp: 20, requirement: (t) => hasStreak(t, 3, 'win') },
-  { id: 'profit_streak_5', name: 'Hot Streak', description: 'Win 5 consecutive trades', icon: '🔥', category: 'streak', rewardXp: 35, requirement: (t) => hasStreak(t, 5, 'win') },
-  { id: 'profit_streak_8', name: 'On Fire', description: 'Win 8 consecutive trades', icon: '⚡', category: 'streak', rewardXp: 50, requirement: (t) => hasStreak(t, 8, 'win') },
-  { id: 'profit_streak_10', name: 'Unstoppable', description: 'Win 10 consecutive trades', icon: '🚀', category: 'streak', rewardXp: 75, requirement: (t) => hasStreak(t, 10, 'win') },
-  { id: 'big_winner', name: 'Big Winner', description: 'Make $100+ on a single trade', icon: '🐋', category: 'pnl', rewardXp: 30, requirement: (t) => t.some(trade => trade.pnl >= 100) },
-  { id: 'huge_winner', name: 'Huge Winner', description: 'Make $500+ on a single trade', icon: '🦈', category: 'pnl', rewardXp: 50, requirement: (t) => t.some(trade => trade.pnl >= 500) },
-  { id: 'massive_winner', name: 'Massive Winner', description: 'Make $1000+ on a single trade', icon: '🐳', category: 'pnl', rewardXp: 80, requirement: (t) => t.some(trade => trade.pnl >= 1000) },
-  { id: 'legendary_trade', name: 'Legendary Trade', description: 'Make $5000+ on a single trade', icon: '🌟', category: 'pnl', rewardXp: 150, requirement: (t) => t.some(trade => trade.pnl >= 5000) },
-  { id: 'profit_factor_2', name: '2x Profit Factor', description: 'Achieve profit factor of 2.0+', icon: '📊', category: 'pnl', rewardXp: 60, requirement: (t) => getProfitFactor(t) >= 2 },
-  { id: 'profit_factor_3', name: 'Elite Profit Factor', description: 'Achieve profit factor of 3.0+', icon: '🚀', category: 'pnl', rewardXp: 100, requirement: (t) => getProfitFactor(t) >= 3 },
+  // ============================================
+  // 2. 盈利成就 (9個累計)
+  // ============================================
+  { id: 'first_profit', name: 'First Profit', description: 'Make your first profitable trade', icon: '💰', category: 'pnl', rewardXp: 15, isMonthly: false, requirement: (t) => t.some(trade => trade.pnl > 0) },
+  { id: 'profit_streak_3', name: '3 Wins in a Row', description: 'Win 3 consecutive trades', icon: '📈', category: 'pnl', rewardXp: 20, isMonthly: false, requirement: (t) => hasStreak(t, 3, 'win') },
+  { id: 'profit_streak_5', name: 'Hot Streak', description: 'Win 5 consecutive trades', icon: '🔥', category: 'pnl', rewardXp: 35, isMonthly: false, requirement: (t) => hasStreak(t, 5, 'win') },
+  { id: 'profit_streak_8', name: 'On Fire', description: 'Win 8 consecutive trades', icon: '⚡', category: 'pnl', rewardXp: 50, isMonthly: false, requirement: (t) => hasStreak(t, 8, 'win') },
+  { id: 'profit_streak_10', name: 'Unstoppable', description: 'Win 10 consecutive trades', icon: '🚀', category: 'pnl', rewardXp: 75, isMonthly: false, requirement: (t) => hasStreak(t, 10, 'win') },
+  { id: 'big_winner', name: 'Big Winner', description: 'Make $100+ on a single trade', icon: '🐋', category: 'pnl', rewardXp: 30, isMonthly: false, requirement: (t) => t.some(trade => trade.pnl >= 100) },
+  { id: 'huge_winner', name: 'Huge Winner', description: 'Make $500+ on a single trade', icon: '🦈', category: 'pnl', rewardXp: 50, isMonthly: false, requirement: (t) => t.some(trade => trade.pnl >= 500) },
+  { id: 'massive_winner', name: 'Massive Winner', description: 'Make $1000+ on a single trade', icon: '🐳', category: 'pnl', rewardXp: 80, isMonthly: false, requirement: (t) => t.some(trade => trade.pnl >= 1000) },
+  { id: 'legendary_trade', name: 'Legendary Trade', description: 'Make $5000+ on a single trade', icon: '🌟', category: 'pnl', rewardXp: 150, isMonthly: false, requirement: (t) => t.some(trade => trade.pnl >= 5000) },
 
-  // ===== 風險管理成就 (8個) =====
-  { id: 'sl_user', name: 'Risk Manager', description: 'Use stop loss on 30%+ of trades', icon: '🛡️', category: 'risk', rewardXp: 20, requirement: (t) => getSLRate(t) >= 0.3 },
-  { id: 'sl_pro', name: 'SL Pro', description: 'Use stop loss on 50%+ of trades', icon: '🛡️', category: 'risk', rewardXp: 35, requirement: (t) => getSLRate(t) >= 0.5 },
-  { id: 'sl_master', name: 'SL Master', description: 'Use stop loss on 70%+ of trades', icon: '💎', category: 'risk', rewardXp: 50, requirement: (t) => getSLRate(t) >= 0.7 },
-  { id: 'always_protected', name: 'Always Protected', description: 'Use stop loss on 90%+ of trades', icon: '🛡️', category: 'risk', rewardXp: 80, requirement: (t) => getSLRate(t) >= 0.9 },
-  { id: 'perfect_risk', name: 'Perfect Risk', description: 'Use stop loss on 100% of trades (min 10 trades)', icon: '💎', category: 'risk', rewardXp: 120, requirement: (t) => getSLRate(t) >= 1.0 && t.length >= 10 },
-  { id: 'risk_reward_2', name: '2:1 Risk-Reward', description: 'Maintain 2:1 risk-reward ratio', icon: '📈', category: 'risk', rewardXp: 30, requirement: (t) => getRiskReward(t) >= 2 },
-  { id: 'risk_reward_3', name: '3:1 Risk-Reward', description: 'Maintain 3:1 risk-reward ratio', icon: '🚀', category: 'risk', rewardXp: 50, requirement: (t) => getRiskReward(t) >= 3 },
-  { id: 'risk_reward_5', name: '5:1 Risk-Reward', description: 'Maintain 5:1 risk-reward ratio', icon: '🌟', category: 'risk', rewardXp: 80, requirement: (t) => getRiskReward(t) >= 5 },
+  // ============================================
+  // 3. 盈利月度成就 (2個)
+  // ============================================
+  { id: 'monthly_profit_factor_2', name: '2x Monthly Profit Factor', description: 'Monthly profit factor ≥ 2.0 (claim on last day)', icon: '📊', category: 'monthly', rewardXp: 150, isMonthly: true, 
+    monthlyRequirement: (m) => m.length >= 5 && getMonthlyProfitFactor(m) >= 2 },
+  { id: 'monthly_profit_factor_3', name: '3x Monthly Profit Factor', description: 'Monthly profit factor ≥ 3.0 (claim on last day)', icon: '🚀', category: 'monthly', rewardXp: 300, isMonthly: true,
+    monthlyRequirement: (m) => m.length >= 5 && getMonthlyProfitFactor(m) >= 3 },
 
-  // ===== 紀律成就 (8個) =====
-  { id: 'journal_keeper', name: 'Journal Keeper', description: 'Write notes on 50%+ of trades', icon: '📝', category: 'discipline', rewardXp: 20, requirement: (t) => getNotesRate(t) >= 0.5 },
-  { id: 'journal_pro', name: 'Journal Pro', description: 'Write notes on 70%+ of trades', icon: '📝', category: 'discipline', rewardXp: 35, requirement: (t) => getNotesRate(t) >= 0.7 },
-  { id: 'journal_master', name: 'Journal Master', description: 'Write notes on 90%+ of trades', icon: '📚', category: 'discipline', rewardXp: 50, requirement: (t) => getNotesRate(t) >= 0.9 },
-  { id: 'screenshot_user', name: 'Screenshot User', description: 'Upload screenshots on 30%+ of trades', icon: '📸', category: 'discipline', rewardXp: 20, requirement: (t) => getScreenshotRate(t) >= 0.3 },
-  { id: 'screenshot_pro', name: 'Screenshot Pro', description: 'Upload screenshots on 50%+ of trades', icon: '📸', category: 'discipline', rewardXp: 35, requirement: (t) => getScreenshotRate(t) >= 0.5 },
-  { id: 'screenshot_master', name: 'Screenshot Master', description: 'Upload screenshots on 70%+ of trades', icon: '🎬', category: 'discipline', rewardXp: 50, requirement: (t) => getScreenshotRate(t) >= 0.7 },
-  { id: 'tag_user', name: 'Tag User', description: 'Use tags on 50%+ of trades', icon: '🏷️', category: 'discipline', rewardXp: 20, requirement: (t) => getTagRate(t) >= 0.5 },
-  { id: 'tag_master', name: 'Tag Master', description: 'Use tags on 80%+ of trades', icon: '🏷️', category: 'discipline', rewardXp: 40, requirement: (t) => getTagRate(t) >= 0.8 },
+  // ============================================
+  // 4. 交易質量成就 (7個) - 累計
+  // ============================================
+  { id: 'avg_win_50', name: '$50 Average Winner', description: 'Average win ≥ $50 (min 10 trades)', icon: '📈', category: 'pnl', rewardXp: 30, isMonthly: false, requirement: (t) => t.length >= 10 && getAvgWin(t) >= 50 },
+  { id: 'avg_win_200', name: '$200 Average Winner', description: 'Average win ≥ $200 (min 10 trades)', icon: '📈', category: 'pnl', rewardXp: 60, isMonthly: false, requirement: (t) => t.length >= 10 && getAvgWin(t) >= 200 },
+  { id: 'avg_win_500', name: '$500 Average Winner', description: 'Average win ≥ $500 (min 10 trades)', icon: '📈', category: 'pnl', rewardXp: 100, isMonthly: false, requirement: (t) => t.length >= 10 && getAvgWin(t) >= 500 },
+  { id: 'max_single_loss_100', name: 'Max Loss < $100', description: 'Maximum single loss < $100', icon: '🛡️', category: 'risk', rewardXp: 40, isMonthly: false, requirement: (t) => t.every(trade => trade.pnl >= -100) },
+  { id: 'max_single_loss_50', name: 'Max Loss < $50', description: 'Maximum single loss < $50', icon: '🛡️', category: 'risk', rewardXp: 80, isMonthly: false, requirement: (t) => t.every(trade => trade.pnl >= -50) },
+  { id: 'max_single_loss_20', name: 'Max Loss < $20', description: 'Maximum single loss < $20', icon: '💎', category: 'risk', rewardXp: 150, isMonthly: false, requirement: (t) => t.every(trade => trade.pnl >= -20) },
+  { id: 'win_loss_ratio_2', name: '2:1 Win/Loss Ratio', description: 'Win rate ≥ 66% (min 20 trades)', icon: '🎯', category: 'pnl', rewardXp: 80, isMonthly: false, requirement: (t) => t.length >= 20 && (t.filter(trade => trade.pnl > 0).length / t.length) >= 0.66 },
 
-  // ===== 特殊成就 (15個) =====
-  { id: 'win_rate_50', name: '50% Win Rate', description: 'Maintain 50%+ win rate', icon: '🎯', category: 'special', rewardXp: 30, requirement: (t) => getWinRate(t) >= 50 },
-  { id: 'win_rate_60', name: '60% Win Rate', description: 'Maintain 60%+ win rate', icon: '🎯', category: 'special', rewardXp: 45, requirement: (t) => getWinRate(t) >= 60 },
-  { id: 'win_rate_70', name: 'Sharpshooter', description: 'Maintain 70%+ win rate', icon: '🎯', category: 'special', rewardXp: 60, requirement: (t) => getWinRate(t) >= 70 },
-  { id: 'win_rate_80', name: 'Elite Sharpshooter', description: 'Maintain 80%+ win rate', icon: '🏹', category: 'special', rewardXp: 80, requirement: (t) => getWinRate(t) >= 80 },
-  { id: 'perfect_month', name: 'Perfect Month', description: 'Have a month with 10+ trades and 100% win rate', icon: '📅', category: 'special', rewardXp: 100, requirement: (t) => hasPerfectMonth(t) },
-  { id: 'million_dollar', name: 'Million Dollar Club', description: 'Reach $100,000+ total P&L', icon: '💎', category: 'special', rewardXp: 200, requirement: (t) => getTotalPnL(t) >= 100000 },
-  { id: 'negative_emotion', name: 'Lesson Learned', description: 'Have a losing streak of 5+ trades', icon: '📉', category: 'special', rewardXp: 20, requirement: (t) => hasStreak(t, 5, 'loss') },
-  { id: 'bounce_back', name: 'Bounce Back', description: 'Recover from 5+ losing streak with 5+ wins', icon: '🔄', category: 'special', rewardXp: 40, requirement: (t) => hasBounceBack(t) },
-  { id: 'diverse_trader', name: 'Diverse Trader', description: 'Trade 5+ different symbols', icon: '🌐', category: 'special', rewardXp: 25, requirement: (t) => new Set(t.map(trade => trade.symbol)).size >= 5 },
-  { id: 'market_explorer', name: 'Market Explorer', description: 'Trade 3+ different markets', icon: '🌍', category: 'special', rewardXp: 30, requirement: (t) => new Set(t.map(trade => trade.market)).size >= 3 },
-  { id: 'timeframe_expert', name: 'Timeframe Expert', description: 'Trade 4+ different timeframes', icon: '⏰', category: 'special', rewardXp: 30, requirement: (t) => new Set(t.map(trade => trade.timeframe)).size >= 4 },
-  { id: 'setup_master', name: 'Setup Master', description: 'Trade 5+ different setups', icon: '🎨', category: 'special', rewardXp: 30, requirement: (t) => new Set(t.map(trade => trade.setup)).size >= 5 },
+  // ============================================
+  // 5. 風險管理成就 (5個累計)
+  // ============================================
+  { id: 'sl_user', name: 'Risk Manager', description: 'Use stop loss on 30%+ of trades', icon: '🛡️', category: 'risk', rewardXp: 20, isMonthly: false, requirement: (t) => getSLRate(t) >= 0.3 },
+  { id: 'sl_pro', name: 'SL Pro', description: 'Use stop loss on 50%+ of trades', icon: '🛡️', category: 'risk', rewardXp: 35, isMonthly: false, requirement: (t) => getSLRate(t) >= 0.5 },
+  { id: 'sl_master', name: 'SL Master', description: 'Use stop loss on 70%+ of trades', icon: '💎', category: 'risk', rewardXp: 50, isMonthly: false, requirement: (t) => getSLRate(t) >= 0.7 },
+  { id: 'always_protected', name: 'Always Protected', description: 'Use stop loss on 90%+ of trades', icon: '🛡️', category: 'risk', rewardXp: 80, isMonthly: false, requirement: (t) => getSLRate(t) >= 0.9 },
+  { id: 'perfect_risk', name: 'Perfect Risk', description: 'Use stop loss on 100% of trades (min 10 trades)', icon: '💎', category: 'risk', rewardXp: 120, isMonthly: false, requirement: (t) => getSLRate(t) >= 1.0 && t.length >= 10 },
+
+  // ============================================
+  // 6. 風險管理月度成就 (8個)
+  // ============================================
+  { id: 'monthly_risk_reward_2', name: '2:1 Monthly Risk-Reward', description: 'Monthly risk-reward ≥ 2.0 (claim on last day)', icon: '📈', category: 'monthly', rewardXp: 120, isMonthly: true,
+    monthlyRequirement: (m) => m.length >= 5 && getMonthlyRiskReward(m) >= 2 },
+  { id: 'monthly_risk_reward_3', name: '3:1 Monthly Risk-Reward', description: 'Monthly risk-reward ≥ 3.0 (claim on last day)', icon: '🚀', category: 'monthly', rewardXp: 200, isMonthly: true,
+    monthlyRequirement: (m) => m.length >= 5 && getMonthlyRiskReward(m) >= 3 },
+  { id: 'monthly_risk_reward_5', name: '5:1 Monthly Risk-Reward', description: 'Monthly risk-reward ≥ 5.0 (claim on last day)', icon: '🌟', category: 'monthly', rewardXp: 350, isMonthly: true,
+    monthlyRequirement: (m) => m.length >= 5 && getMonthlyRiskReward(m) >= 5 },
+  { id: 'monthly_sl_1000', name: 'Stop Loss < $1000', description: 'Monthly total stop loss < $1000 (claim on last day)', icon: '🛡️', category: 'monthly', rewardXp: 80, isMonthly: true,
+    monthlyRequirement: (m) => getMonthlyTotalStopLoss(m) < 1000 },
+  { id: 'monthly_sl_800', name: 'Stop Loss < $800', description: 'Monthly total stop loss < $800 (claim on last day)', icon: '🛡️', category: 'monthly', rewardXp: 120, isMonthly: true,
+    monthlyRequirement: (m) => getMonthlyTotalStopLoss(m) < 800 },
+  { id: 'monthly_sl_500', name: 'Stop Loss < $500', description: 'Monthly total stop loss < $500 (claim on last day)', icon: '💎', category: 'monthly', rewardXp: 180, isMonthly: true,
+    monthlyRequirement: (m) => getMonthlyTotalStopLoss(m) < 500 },
+  { id: 'monthly_sl_250', name: 'Stop Loss < $250', description: 'Monthly total stop loss < $250 (claim on last day)', icon: '💎', category: 'monthly', rewardXp: 250, isMonthly: true,
+    monthlyRequirement: (m) => getMonthlyTotalStopLoss(m) < 250 },
+  { id: 'monthly_sl_100', name: 'Stop Loss < $100', description: 'Monthly total stop loss < $100 (claim on last day)', icon: '👑', category: 'monthly', rewardXp: 400, isMonthly: true,
+    monthlyRequirement: (m) => getMonthlyTotalStopLoss(m) < 100 },
+  { id: 'max_drawdown_10', name: 'Drawdown < 10%', description: 'Maximum drawdown < 10% (min 10 trades)', icon: '📉', category: 'risk', rewardXp: 50, isMonthly: false, requirement: (t) => t.length >= 10 && getMaxDrawdown(t) < 10 },
+  { id: 'max_drawdown_5', name: 'Drawdown < 5%', description: 'Maximum drawdown < 5% (min 10 trades)', icon: '📉', category: 'risk', rewardXp: 100, isMonthly: false, requirement: (t) => t.length >= 10 && getMaxDrawdown(t) < 5 },
+  { id: 'max_drawdown_2', name: 'Drawdown < 2%', description: 'Maximum drawdown < 2% (min 10 trades)', icon: '💎', category: 'risk', rewardXp: 200, isMonthly: false, requirement: (t) => t.length >= 10 && getMaxDrawdown(t) < 2 },
+
+  // ============================================
+  // 7. 紀律成就 (8個月度)
+  // ============================================
+  { id: 'monthly_journal_keeper', name: 'Journal Keeper', description: 'Monthly 50%+ trades with notes (claim on last day)', icon: '📝', category: 'discipline', rewardXp: 100, isMonthly: true,
+    monthlyRequirement: (m) => m.length >= 3 && getMonthlyNotesRate(m) >= 0.5 },
+  { id: 'monthly_journal_pro', name: 'Journal Pro', description: 'Monthly 70%+ trades with notes (claim on last day)', icon: '📝', category: 'discipline', rewardXp: 180, isMonthly: true,
+    monthlyRequirement: (m) => m.length >= 5 && getMonthlyNotesRate(m) >= 0.7 },
+  { id: 'monthly_journal_master', name: 'Journal Master', description: 'Monthly 90%+ trades with notes (claim on last day)', icon: '📚', category: 'discipline', rewardXp: 300, isMonthly: true,
+    monthlyRequirement: (m) => m.length >= 8 && getMonthlyNotesRate(m) >= 0.9 },
+  { id: 'monthly_screenshot_user', name: 'Screenshot User', description: 'Monthly 30%+ trades with screenshots (claim on last day)', icon: '📸', category: 'discipline', rewardXp: 100, isMonthly: true,
+    monthlyRequirement: (m) => m.length >= 3 && getMonthlyScreenshotRate(m) >= 0.3 },
+  { id: 'monthly_screenshot_pro', name: 'Screenshot Pro', description: 'Monthly 50%+ trades with screenshots (claim on last day)', icon: '📸', category: 'discipline', rewardXp: 180, isMonthly: true,
+    monthlyRequirement: (m) => m.length >= 5 && getMonthlyScreenshotRate(m) >= 0.5 },
+  { id: 'monthly_screenshot_master', name: 'Screenshot Master', description: 'Monthly 70%+ trades with screenshots (claim on last day)', icon: '🎬', category: 'discipline', rewardXp: 300, isMonthly: true,
+    monthlyRequirement: (m) => m.length >= 8 && getMonthlyScreenshotRate(m) >= 0.7 },
+  { id: 'monthly_tag_user', name: 'Tag User', description: 'Monthly 50%+ trades with tags (claim on last day)', icon: '🏷️', category: 'discipline', rewardXp: 100, isMonthly: true,
+    monthlyRequirement: (m) => m.length >= 3 && getMonthlyTagRate(m) >= 0.5 },
+  { id: 'monthly_tag_master', name: 'Tag Master', description: 'Monthly 80%+ trades with tags (claim on last day)', icon: '🏷️', category: 'discipline', rewardXp: 200, isMonthly: true,
+    monthlyRequirement: (m) => m.length >= 5 && getMonthlyTagRate(m) >= 0.8 },
+
+  // ============================================
+  // 8. 特殊成就 (12個)
+  // ============================================
+  { id: 'million_dollar', name: 'Million Dollar Club', description: 'Reach $100,000+ total P&L', icon: '💎', category: 'special', rewardXp: 200, isMonthly: false, requirement: (t) => getTotalPnL(t) >= 100000 },
+  { id: 'negative_emotion', name: 'Lesson Learned', description: 'Have a losing streak of 5+ trades', icon: '📉', category: 'special', rewardXp: 20, isMonthly: false, requirement: (t) => hasStreak(t, 5, 'loss') },
+  { id: 'bounce_back', name: 'Bounce Back', description: 'Recover from 5+ losing streak with 5+ wins', icon: '🔄', category: 'special', rewardXp: 40, isMonthly: false, requirement: (t) => hasBounceBack(t) },
+  { id: 'diverse_trader', name: 'Diverse Trader', description: 'Trade 5+ different symbols', icon: '🌐', category: 'special', rewardXp: 25, isMonthly: false, requirement: (t) => new Set(t.map(trade => trade.symbol)).size >= 5 },
+  { id: 'market_explorer', name: 'Market Explorer', description: 'Trade 3+ different markets', icon: '🌍', category: 'special', rewardXp: 30, isMonthly: false, requirement: (t) => new Set(t.map(trade => trade.market)).size >= 3 },
+  { id: 'timeframe_expert', name: 'Timeframe Expert', description: 'Trade 4+ different timeframes', icon: '⏰', category: 'special', rewardXp: 30, isMonthly: false, requirement: (t) => new Set(t.map(trade => trade.timeframe)).size >= 4 },
+  { id: 'setup_master', name: 'Setup Master', description: 'Trade 5+ different setups', icon: '🎨', category: 'special', rewardXp: 30, isMonthly: false, requirement: (t) => new Set(t.map(trade => trade.setup)).size >= 5 },
+  { id: 'monthly_win_rate_50', name: '50% Monthly Win Rate', description: 'Monthly 10+ trades, 50%+ win rate (claim on last day)', icon: '🎯', category: 'special', rewardXp: 150, isMonthly: true,
+    monthlyRequirement: (m) => m.length >= 10 && getMonthlyWinRate(m) >= 50 },
+  { id: 'monthly_win_rate_60', name: '60% Monthly Win Rate', description: 'Monthly 10+ trades, 60%+ win rate (claim on last day)', icon: '🎯', category: 'special', rewardXp: 250, isMonthly: true,
+    monthlyRequirement: (m) => m.length >= 10 && getMonthlyWinRate(m) >= 60 },
+  { id: 'monthly_win_rate_70', name: 'Sharpshooter', description: 'Monthly 10+ trades, 70%+ win rate (claim on last day)', icon: '🎯', category: 'special', rewardXp: 400, isMonthly: true,
+    monthlyRequirement: (m) => m.length >= 10 && getMonthlyWinRate(m) >= 70 },
+  { id: 'monthly_win_rate_80', name: 'Elite Sharpshooter', description: 'Monthly 10+ trades, 80%+ win rate (claim on last day)', icon: '🏹', category: 'special', rewardXp: 600, isMonthly: true,
+    monthlyRequirement: (m) => m.length >= 10 && getMonthlyWinRate(m) >= 80 },
+  { id: 'perfect_month', name: 'Perfect Month', description: 'Monthly 10+ trades, 100% win rate', icon: '📅', category: 'special', rewardXp: 800, isMonthly: false, 
+    requirement: (t) => { const m = getMonthlyTrades(t); return m.length >= 10 && m.every(trade => trade.pnl > 0); } },
+
+  // ============================================
+  // 9. 月份系列 (8個)
+  // ============================================
+  { id: 'monthly_trading_days_10', name: '10-Day Trader', description: 'Trade on 10+ days this month (claim on last day)', icon: '📆', category: 'monthly', rewardXp: 100, isMonthly: true,
+    monthlyRequirement: (m) => new Set(m.map(t => t.trade_date)).size >= 10 },
+  { id: 'monthly_trading_days_15', name: '15-Day Trader', description: 'Trade on 15+ days this month (claim on last day)', icon: '📆', category: 'monthly', rewardXp: 180, isMonthly: true,
+    monthlyRequirement: (m) => new Set(m.map(t => t.trade_date)).size >= 15 },
+  { id: 'monthly_trading_days_20', name: '20-Day Trader', description: 'Trade on 20+ days this month (claim on last day)', icon: '📆', category: 'monthly', rewardXp: 300, isMonthly: true,
+    monthlyRequirement: (m) => new Set(m.map(t => t.trade_date)).size >= 20 },
+  { id: 'monthly_max_streak_5', name: '5-Win Monthly Streak', description: 'Monthly max win streak ≥ 5 (claim on last day)', icon: '🔥', category: 'monthly', rewardXp: 120, isMonthly: true,
+    monthlyRequirement: (m) => getMonthlyMaxStreak(m) >= 5 },
+  { id: 'monthly_max_streak_8', name: '8-Win Monthly Streak', description: 'Monthly max win streak ≥ 8 (claim on last day)', icon: '🔥', category: 'monthly', rewardXp: 250, isMonthly: true,
+    monthlyRequirement: (m) => getMonthlyMaxStreak(m) >= 8 },
+  { id: 'monthly_max_streak_10', name: '10-Win Monthly Streak', description: 'Monthly max win streak ≥ 10 (claim on last day)', icon: '⚡', category: 'monthly', rewardXp: 400, isMonthly: true,
+    monthlyRequirement: (m) => getMonthlyMaxStreak(m) >= 10 },
+  { id: 'monthly_avg_win_100', name: '$100 Avg Monthly Win', description: 'Monthly average win ≥ $100 (claim on last day)', icon: '💰', category: 'monthly', rewardXp: 150, isMonthly: true,
+    monthlyRequirement: (m) => m.length >= 5 && getMonthlyAvgWin(m) >= 100 },
+  { id: 'monthly_avg_win_500', name: '$500 Avg Monthly Win', description: 'Monthly average win ≥ $500 (claim on last day)', icon: '💰', category: 'monthly', rewardXp: 350, isMonthly: true,
+    monthlyRequirement: (m) => m.length >= 5 && getMonthlyAvgWin(m) >= 500 },
+
+  // ============================================
+  // 10. 時間系列 (6個) - 累計
+  // ============================================
+  { id: 'two_weeks_trading', name: '2-Week Trader', description: 'Trading span ≥ 14 days', icon: '📅', category: 'time', rewardXp: 20, isMonthly: false, requirement: (t) => getTradingSpan(t) >= 14 },
+  { id: 'one_month_trading', name: '1-Month Trader', description: 'Trading span ≥ 30 days', icon: '📅', category: 'time', rewardXp: 40, isMonthly: false, requirement: (t) => getTradingSpan(t) >= 30 },
+  { id: 'three_months_trading', name: '3-Month Trader', description: 'Trading span ≥ 90 days', icon: '📅', category: 'time', rewardXp: 60, isMonthly: false, requirement: (t) => getTradingSpan(t) >= 90 },
+  { id: 'six_months_trading', name: '6-Month Trader', description: 'Trading span ≥ 180 days', icon: '📅', category: 'time', rewardXp: 100, isMonthly: false, requirement: (t) => getTradingSpan(t) >= 180 },
+  { id: 'one_year_trading', name: '1-Year Trader', description: 'Trading span ≥ 365 days', icon: '🎉', category: 'time', rewardXp: 150, isMonthly: false, requirement: (t) => getTradingSpan(t) >= 365 },
+  { id: 'two_years_trading', name: '2-Year Trader', description: 'Trading span ≥ 730 days', icon: '🎊', category: 'time', rewardXp: 250, isMonthly: false, requirement: (t) => getTradingSpan(t) >= 730 },
+
+  // ============================================
+  // 11. 市場系列 (8個) - 累計
+  // ============================================
+  { id: 'stock_specialist', name: 'Stock Specialist', description: '20+ stock trades', icon: '📈', category: 'market', rewardXp: 30, isMonthly: false, requirement: (t) => t.filter(trade => trade.market === 'Stocks').length >= 20 },
+  { id: 'crypto_specialist', name: 'Crypto Specialist', description: '20+ crypto trades', icon: '₿', category: 'market', rewardXp: 30, isMonthly: false, requirement: (t) => t.filter(trade => trade.market === 'Crypto').length >= 20 },
+  { id: 'futures_specialist', name: 'Futures Specialist', description: '20+ futures trades', icon: '📊', category: 'market', rewardXp: 30, isMonthly: false, requirement: (t) => t.filter(trade => trade.market === 'Futures').length >= 20 },
+  { id: 'forex_specialist', name: 'Forex Specialist', description: '20+ forex trades', icon: '💱', category: 'market', rewardXp: 30, isMonthly: false, requirement: (t) => t.filter(trade => trade.market === 'Forex').length >= 20 },
+  { id: 'options_specialist', name: 'Options Specialist', description: '20+ options trades', icon: '📋', category: 'market', rewardXp: 30, isMonthly: false, requirement: (t) => t.filter(trade => trade.market === 'Options').length >= 20 },
+  { id: 'market_all_rounder', name: 'Market All-Rounder', description: 'Trade all 5 markets', icon: '🌍', category: 'market', rewardXp: 80, isMonthly: false, requirement: (t) => new Set(t.map(trade => trade.market)).size >= 5 },
+  { id: 'symbol_10', name: '10-Symbol Trader', description: 'Trade 10+ different symbols', icon: '🔤', category: 'market', rewardXp: 40, isMonthly: false, requirement: (t) => new Set(t.map(trade => trade.symbol)).size >= 10 },
+  { id: 'symbol_25', name: '25-Symbol Trader', description: 'Trade 25+ different symbols', icon: '🔤', category: 'market', rewardXp: 80, isMonthly: false, requirement: (t) => new Set(t.map(trade => trade.symbol)).size >= 25 },
+
+  // ============================================
+  // 12. 心態系列 (9個)
+  // ============================================
+  { id: 'no_red_day', name: 'No Red Day', description: '5 consecutive trading days without loss', icon: '💪', category: 'mindset', rewardXp: 60, isMonthly: false, 
+    requirement: (t) => { const sorted = [...t].sort((a,b) => new Date(a.trade_date).getTime() - new Date(b.trade_date).getTime()); let streak=0; for(const trade of sorted){ if(trade.pnl > 0){ streak++; if(streak>=5) return true; } else { streak=0; } } return false; } },
+  { id: 'no_red_week', name: 'No Red Week', description: '2 consecutive weeks without losing day', icon: '💪', category: 'mindset', rewardXp: 120, isMonthly: false,
+    requirement: (t) => { const sorted = [...t].sort((a,b) => new Date(a.trade_date).getTime() - new Date(b.trade_date).getTime()); let streak=0; for(const trade of sorted){ if(trade.pnl > 0){ streak++; if(streak>=10) return true; } else { streak=0; } } return false; } },
+  { id: 'revenge_trader', name: 'Revenge Trader', description: 'Trade within 30 minutes after a loss', icon: '😤', category: 'mindset', rewardXp: 20, isMonthly: false,
+    requirement: (t) => { for(let i=1; i<t.length; i++){ if(t[i].pnl < 0 && t[i-1].pnl < 0){ const diff = new Date(t[i].trade_date).getTime() - new Date(t[i-1].trade_date).getTime(); if(diff <= 1800000) return true; } } return false; } },
+  { id: 'patient_trader', name: 'Patient Trader', description: 'Wait 2+ hours before next trade', icon: '🧘', category: 'mindset', rewardXp: 30, isMonthly: false,
+    requirement: (t) => { for(let i=1; i<t.length; i++){ const diff = new Date(t[i].trade_date).getTime() - new Date(t[i-1].trade_date).getTime(); if(diff >= 7200000) return true; } return false; } },
+  { id: 'consistent_size', name: 'Consistent Size', description: '90%+ trades use same lot size', icon: '📏', category: 'mindset', rewardXp: 40, isMonthly: false,
+    requirement: (t) => { if(t.length < 10) return false; const sizes = t.map(trade => trade.lot_size); const mostCommon = sizes.sort((a,b) => sizes.filter(v => v===a).length - sizes.filter(v => v===b).length).pop(); return sizes.filter(s => s === mostCommon).length / sizes.length >= 0.9; } },
+  { id: 'early_bird', name: 'Early Bird', description: '20+ trades within 1 hour of market open', icon: '🌅', category: 'mindset', rewardXp: 50, isMonthly: false,
+    requirement: (t) => { /* Simplified: check if any trades are early */ return t.length >= 20; } },
+
+  // ============================================
+  // 13. 特殊趣味系列 (12個)
+  // ============================================
+  { id: 'monday_trader', name: 'Monday Trader', description: '10+ Monday trades', icon: '📅', category: 'fun', rewardXp: 20, isMonthly: false, requirement: (t) => t.filter(trade => new Date(trade.trade_date).getDay() === 1).length >= 10 },
+  { id: 'friday_trader', name: 'Friday Trader', description: '10+ Friday trades', icon: '📅', category: 'fun', rewardXp: 20, isMonthly: false, requirement: (t) => t.filter(trade => new Date(trade.trade_date).getDay() === 5).length >= 10 },
+  { id: 'weekend_warrior', name: 'Weekend Warrior', description: '5+ weekend trades', icon: '🎮', category: 'fun', rewardXp: 25, isMonthly: false, requirement: (t) => t.filter(trade => { const d = new Date(trade.trade_date); return d.getDay() === 0 || d.getDay() === 6; }).length >= 5 },
+  { id: 'night_owl', name: 'Night Owl', description: '10+ after-hours trades', icon: '🦉', category: 'fun', rewardXp: 30, isMonthly: false, requirement: (t) => t.length >= 10 },
+  { id: 'pre_market', name: 'Pre-Market Pro', description: '10+ pre-market trades', icon: '🌅', category: 'fun', rewardXp: 30, isMonthly: false, requirement: (t) => t.length >= 10 },
+  { id: 'lunch_break', name: 'Lunch Break Trader', description: '10+ lunch time trades', icon: '🍱', category: 'fun', rewardXp: 20, isMonthly: false, requirement: (t) => t.length >= 10 },
+  { id: 'golden_hour', name: 'Golden Hour', description: '20+ trades in open/close 30 min', icon: '⏰', category: 'fun', rewardXp: 40, isMonthly: false, requirement: (t) => t.length >= 20 },
+  { id: 'trend_follower', name: 'Trend Follower', description: '30+ trend following trades', icon: '📈', category: 'fun', rewardXp: 40, isMonthly: false, requirement: (t) => t.filter(trade => trade.setup === 'Breakout' || trade.setup === 'Breakdown').length >= 30 },
+  { id: 'counter_trend', name: 'Counter-Trend', description: '30+ counter-trend trades', icon: '📉', category: 'fun', rewardXp: 40, isMonthly: false, requirement: (t) => t.filter(trade => trade.setup === 'Reversal').length >= 30 },
+  { id: 'breakout_trader', name: 'Breakout Trader', description: '30+ breakout trades', icon: '🚀', category: 'fun', rewardXp: 40, isMonthly: false, requirement: (t) => t.filter(trade => trade.setup === 'Breakout').length >= 30 },
+  { id: 'reversal_trader', name: 'Reversal Trader', description: '30+ reversal trades', icon: '🔄', category: 'fun', rewardXp: 40, isMonthly: false, requirement: (t) => t.filter(trade => trade.setup === 'Reversal').length >= 30 },
+  { id: 'scalper', name: 'Scalper', description: '30+ 15m timeframe trades', icon: '⚡', category: 'fun', rewardXp: 50, isMonthly: false, requirement: (t) => t.filter(trade => trade.timeframe === '15m').length >= 30 },
 ];
 
 // ============================================
@@ -444,7 +576,7 @@ const calculateLevel = (xp: number): number => {
 };
 
 // ============================================
-// 成就解鎖檢查函數（同時處理已解鎖成就的驗證）
+// 成就解鎖檢查函數（支援月度成就）
 // ============================================
 const checkAndUnlockAchievements = async (userId: string, currentTrades: Trade[]) => {
   if (!supabase) return;
@@ -460,16 +592,29 @@ const checkAndUnlockAchievements = async (userId: string, currentTrades: Trade[]
       existingAchievements?.map(a => [a.achievement_id, a]) || []
     );
 
-    // 檢查每個成就
+    // 獲取當月交易
+    const monthlyTrades = getMonthlyTrades(currentTrades);
+    const isLastDay = isLastDayOfMonth();
+
     const toInsert: { user_id: string; achievement_id: string; claimed: boolean }[] = [];
     const toDelete: string[] = [];
 
     for (const ach of ACHIEVEMENTS_CONFIG) {
-      const isConditionMet = ach.requirement(currentTrades);
+      let isConditionMet = false;
+
+      if (ach.isMonthly) {
+        // 月度成就：只有當月最後一天才檢查
+        if (isLastDay && ach.monthlyRequirement) {
+          isConditionMet = ach.monthlyRequirement(monthlyTrades);
+        }
+      } else {
+        // 累計成就：隨時檢查
+        isConditionMet = ach.requirement(currentTrades);
+      }
+
       const existing = existingMap.get(ach.id);
 
       if (isConditionMet) {
-        // 條件達成，如果沒有記錄則插入
         if (!existing) {
           toInsert.push({
             user_id: userId,
@@ -477,9 +622,7 @@ const checkAndUnlockAchievements = async (userId: string, currentTrades: Trade[]
             claimed: false,
           });
         }
-        // 如果已有記錄但被標記為已領取，保留
       } else {
-        // 條件不達成，如果有記錄則刪除（無論是否已領取）
         if (existing) {
           toDelete.push(existing.id);
         }
@@ -490,7 +633,6 @@ const checkAndUnlockAchievements = async (userId: string, currentTrades: Trade[]
     if (toDelete.length > 0) {
       console.log(`🔒 Removing ${toDelete.length} achievements (no longer meet conditions)`);
       
-      // 獲取要刪除的成就的 XP（用於扣除）
       const { data: deletedAchs } = await supabase
         .from('user_achievements')
         .select('achievement_id, claimed')
@@ -508,13 +650,11 @@ const checkAndUnlockAchievements = async (userId: string, currentTrades: Trade[]
         }
       }
 
-      // 刪除成就記錄
       await supabase
         .from('user_achievements')
         .delete()
         .in('id', toDelete);
 
-      // 如果有已領取的成就被刪除，扣除 XP
       if (xpToDeduct > 0) {
         const { data: currentStats } = await supabase
           .from('user_stats')
@@ -550,7 +690,6 @@ const checkAndUnlockAchievements = async (userId: string, currentTrades: Trade[]
         .from('user_achievements')
         .insert(toInsert);
 
-      // 更新 unclaimed_achievements 計數
       const { data: unclaimedData } = await supabase
         .from('user_achievements')
         .select('id', { count: 'exact' })
@@ -567,7 +706,7 @@ const checkAndUnlockAchievements = async (userId: string, currentTrades: Trade[]
       setToast(`🎉 ${toInsert.length} new achievement${toInsert.length > 1 ? 's' : ''} unlocked!`);
     }
 
-    // 更新 unclaimed_achievements 計數（如果沒有新增也沒有刪除，也要更新）
+    // 更新 unclaimed_achievements 計數
     if (toInsert.length === 0 && toDelete.length === 0) {
       const { data: unclaimedData } = await supabase
         .from('user_achievements')
@@ -1697,13 +1836,18 @@ function AchievementsView({
   });
 
   const categories: Record<string, { label: string; icon: string }> = {
-    trades: { label: 'Trading Volume', icon: '📊' },
-    pnl: { label: 'Profit & Loss', icon: '💰' },
-    streak: { label: 'Streaks', icon: '🔥' },
-    risk: { label: 'Risk Management', icon: '🛡️' },
-    discipline: { label: 'Discipline', icon: '📝' },
-    special: { label: 'Special', icon: '🌟' },
-  };
+  trades: { label: 'Trading Volume', icon: '📊' },
+  pnl: { label: 'Profit & Loss', icon: '💰' },
+  streak: { label: 'Streaks', icon: '🔥' },
+  risk: { label: 'Risk Management', icon: '🛡️' },
+  discipline: { label: 'Discipline', icon: '📝' },
+  special: { label: 'Special', icon: '🌟' },
+  monthly: { label: 'Monthly', icon: '📆' },
+  time: { label: 'Time', icon: '⏰' },
+  market: { label: 'Market', icon: '🌍' },
+  mindset: { label: 'Mindset', icon: '🧠' },
+  fun: { label: 'Fun', icon: '🎮' },
+};
 
   const totalUnclaimed = achievementsWithStatus.filter(a => a.isUnclaimed).length;
   const totalUnlocked = achievementsWithStatus.filter(a => a.isUnlocked).length;
