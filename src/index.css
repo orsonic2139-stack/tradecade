@@ -1422,3 +1422,87 @@ td strong { display: block; font: 10px 'DM Mono'; }
     padding: 4px 10px;
   }
 }
+
+/* ============================================
+   ACHIEVEMENT FILTERS - Claim All 按鈕
+   ============================================ */
+
+.achievement-filters {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.filter-left {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.achievement-filters button {
+  padding: 6px 14px;
+  border: 1px solid #2a3540;
+  background: #131b23;
+  color: #788896;
+  border-radius: 6px;
+  font-size: 11px;
+  transition: 0.2s;
+  cursor: pointer;
+}
+
+.achievement-filters button:hover {
+  border-color: #3a4550;
+  color: #b7c3cd;
+}
+
+.achievement-filters button.active {
+  background: #1a2e28;
+  border-color: #2a5a4a;
+  color: #48d9a9;
+}
+
+/* Claim All 按鈕 */
+.claim-all-button {
+  padding: 6px 18px;
+  background: linear-gradient(135deg, #48d9a9, #24b88a);
+  border: none;
+  border-radius: 6px;
+  color: #0d1117;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Manrope', sans-serif;
+  white-space: nowrap;
+}
+
+.claim-all-button:hover:not(:disabled) {
+  transform: scale(1.05);
+  box-shadow: 0 4px 20px rgba(72, 217, 169, 0.35);
+}
+
+.claim-all-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* 響應式 */
+@media (max-width: 768px) {
+  .achievement-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .filter-left {
+    justify-content: center;
+  }
+  
+  .claim-all-button {
+    text-align: center;
+    padding: 8px;
+  }
+}

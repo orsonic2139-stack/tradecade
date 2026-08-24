@@ -1588,6 +1588,7 @@ function AchievementsView({
   claiming: string | null;
 }) {
   const [filter, setFilter] = useState<'all' | 'unlocked' | 'locked' | 'unclaimed'>('all');
+  const [claimingAll, setClaimingAll] = useState(false);
 
   const achievementsWithStatus = ACHIEVEMENTS_CONFIG.map(ach => {
     const userAch = userAchievements.find(ua => ua.achievement_id === ach.id);
