@@ -444,64 +444,145 @@ const calculateLevel = (xp: number): number => {
 };
 
 // ============================================
-// 成就解鎖檢查函數
+// 成就解鎖檢查函數（同時處理已解鎖成就的驗證）
 // ============================================
 const checkAndUnlockAchievements = async (userId: string, currentTrades: Trade[]) => {
   if (!supabase) return;
 
   try {
-    // 獲取當前已解鎖的成就 ID
+    // 獲取當前所有成就記錄
     const { data: existingAchievements } = await supabase
       .from('user_achievements')
-      .select('achievement_id')
+      .select('*')
       .eq('user_id', userId);
 
-    const existingIds = new Set(existingAchievements?.map(a => a.achievement_id) || []);
+    const existingMap = new Map(
+      existingAchievements?.map(a => [a.achievement_id, a]) || []
+    );
 
     // 檢查每個成就
     const toInsert: { user_id: string; achievement_id: string; claimed: boolean }[] = [];
+    const toDelete: string[] = [];
 
     for (const ach of ACHIEVEMENTS_CONFIG) {
-      if (existingIds.has(ach.id)) continue;
-      if (ach.requirement(currentTrades)) {
-        toInsert.push({
-          user_id: userId,
-          achievement_id: ach.id,
-          claimed: false,
-        });
+      const isConditionMet = ach.requirement(currentTrades);
+      const existing = existingMap.get(ach.id);
+
+      if (isConditionMet) {
+        // 條件達成，如果沒有記錄則插入
+        if (!existing) {
+          toInsert.push({
+            user_id: userId,
+            achievement_id: ach.id,
+            claimed: false,
+          });
+        }
+        // 如果已有記錄但被標記為已領取，保留
+      } else {
+        // 條件不達成，如果有記錄則刪除（無論是否已領取）
+        if (existing) {
+          toDelete.push(existing.id);
+        }
       }
     }
 
+    // 刪除不再符合條件的成就
+    if (toDelete.length > 0) {
+      console.log(`🔒 Removing ${toDelete.length} achievements (no longer meet conditions)`);
+      
+      // 獲取要刪除的成就的 XP（用於扣除）
+      const { data: deletedAchs } = await supabase
+        .from('user_achievements')
+        .select('achievement_id, claimed')
+        .in('id', toDelete);
+
+      let xpToDeduct = 0;
+      if (deletedAchs) {
+        for (const ach of deletedAchs) {
+          if (ach.claimed) {
+            const config = ACHIEVEMENTS_CONFIG.find(a => a.id === ach.achievement_id);
+            if (config) {
+              xpToDeduct += config.rewardXp;
+            }
+          }
+        }
+      }
+
+      // 刪除成就記錄
+      await supabase
+        .from('user_achievements')
+        .delete()
+        .in('id', toDelete);
+
+      // 如果有已領取的成就被刪除，扣除 XP
+      if (xpToDeduct > 0) {
+        const { data: currentStats } = await supabase
+          .from('user_stats')
+          .select('total_xp, claimed_xp')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        if (currentStats) {
+          const newTotalXp = Math.max(0, (currentStats.total_xp || 0) - xpToDeduct);
+          const newClaimedXp = Math.max(0, (currentStats.claimed_xp || 0) - xpToDeduct);
+          const newLevel = calculateLevel(newTotalXp);
+
+          await supabase
+            .from('user_stats')
+            .update({
+              total_xp: newTotalXp,
+              claimed_xp: newClaimedXp,
+              level: newLevel,
+              updated_at: new Date().toISOString()
+            })
+            .eq('user_id', userId);
+
+          console.log(`➖ Deducted ${xpToDeduct} XP for removed achievements`);
+        }
+      }
+    }
+
+    // 插入新解鎖的成就
     if (toInsert.length > 0) {
       console.log(`🎯 Unlocked ${toInsert.length} new achievements!`, toInsert.map(a => a.achievement_id));
       
-      const { error } = await supabase
+      await supabase
         .from('user_achievements')
         .insert(toInsert);
 
-      if (error) {
-        console.error('Failed to insert achievements:', error);
-      } else {
-        // ✅ 重新計算 unclaimed_achievements
-        const { data: unclaimedData } = await supabase
-          .from('user_achievements')
-          .select('id', { count: 'exact' })
-          .eq('user_id', userId)
-          .eq('claimed', false);
+      // 更新 unclaimed_achievements 計數
+      const { data: unclaimedData } = await supabase
+        .from('user_achievements')
+        .select('id', { count: 'exact' })
+        .eq('user_id', userId)
+        .eq('claimed', false);
 
-        const unclaimedCount = unclaimedData?.length || 0;
-        console.log(`📊 Unclaimed achievements: ${unclaimedCount}`);
-
-        await supabase
-          .from('user_stats')
-          .update({ 
-            unclaimed_achievements: unclaimedCount
-          })
-          .eq('user_id', userId);
-        
-        setToast(`🎉 ${toInsert.length} new achievement${toInsert.length > 1 ? 's' : ''} unlocked!`);
-      }
+      await supabase
+        .from('user_stats')
+        .update({ 
+          unclaimed_achievements: unclaimedData?.length || 0
+        })
+        .eq('user_id', userId);
+      
+      setToast(`🎉 ${toInsert.length} new achievement${toInsert.length > 1 ? 's' : ''} unlocked!`);
     }
+
+    // 更新 unclaimed_achievements 計數（如果沒有新增也沒有刪除，也要更新）
+    if (toInsert.length === 0 && toDelete.length === 0) {
+      const { data: unclaimedData } = await supabase
+        .from('user_achievements')
+        .select('id', { count: 'exact' })
+        .eq('user_id', userId)
+        .eq('claimed', false);
+
+      await supabase
+        .from('user_stats')
+        .update({ 
+          unclaimed_achievements: unclaimedData?.length || 0
+        })
+        .eq('user_id', userId);
+    }
+
   } catch (error) {
     console.error('Error checking achievements:', error);
   }
@@ -1627,6 +1708,22 @@ function AchievementsView({
   const totalUnclaimed = achievementsWithStatus.filter(a => a.isUnclaimed).length;
   const totalUnlocked = achievementsWithStatus.filter(a => a.isUnlocked).length;
 
+  // ✅ Claim All 功能 - 必須在 return 之前定義
+  const handleClaimAll = async () => {
+    if (claimingAll) return;
+    setClaimingAll(true);
+    
+    const unclaimedAchievements = achievementsWithStatus.filter(a => a.isUnclaimed);
+    
+    for (const ach of unclaimedAchievements) {
+      await onClaim(ach.id);
+      // 等待一小段時間避免請求過快
+      await new Promise(resolve => setTimeout(resolve, 300));
+    }
+    
+    setClaimingAll(false);
+  };
+
   return (
     <>
       <PageHeader
@@ -1650,28 +1747,28 @@ function AchievementsView({
       />
 
       <div className="achievement-filters">
-  <div className="filter-left">
-    <button className={filter === 'all' ? 'active' : ''} onClick={() => setFilter('all')}>All</button>
-    <button className={filter === 'unlocked' ? 'active' : ''} onClick={() => setFilter('unlocked')}>
-      Unlocked ({totalUnlocked})
-    </button>
-    <button className={filter === 'unclaimed' ? 'active' : ''} onClick={() => setFilter('unclaimed')}>
-      Ready to Claim ({totalUnclaimed})
-    </button>
-    <button className={filter === 'locked' ? 'active' : ''} onClick={() => setFilter('locked')}>
-      Locked ({ACHIEVEMENTS_CONFIG.length - totalUnlocked})
-    </button>
-  </div>
-  {totalUnclaimed > 0 && (
-    <button 
-      className="claim-all-button"
-      onClick={() => handleClaimAll()}
-      disabled={claimingAll}
-    >
-      {claimingAll ? '⏳ Claiming...' : 'Claim All'}
-    </button>
-  )}
-</div>
+        <div className="filter-left">
+          <button className={filter === 'all' ? 'active' : ''} onClick={() => setFilter('all')}>All</button>
+          <button className={filter === 'unlocked' ? 'active' : ''} onClick={() => setFilter('unlocked')}>
+            Unlocked ({totalUnlocked})
+          </button>
+          <button className={filter === 'unclaimed' ? 'active' : ''} onClick={() => setFilter('unclaimed')}>
+            🎁 Ready to Claim ({totalUnclaimed})
+          </button>
+          <button className={filter === 'locked' ? 'active' : ''} onClick={() => setFilter('locked')}>
+            Locked ({ACHIEVEMENTS_CONFIG.length - totalUnlocked})
+          </button>
+        </div>
+        {totalUnclaimed > 0 && (
+          <button 
+            className="claim-all-button"
+            onClick={handleClaimAll}
+            disabled={claimingAll}
+          >
+            {claimingAll ? '⏳ Claiming...' : '🎯 Claim All'}
+          </button>
+        )}
+      </div>
 
       <div className="achievements-grid">
         {filteredAchievements.map((ach) => (
@@ -1700,7 +1797,7 @@ function AchievementsView({
                   <button
                     className="claim-button"
                     onClick={() => onClaim(ach.id)}
-                    disabled={claiming === ach.id}
+                    disabled={claiming === ach.id || claimingAll}
                   >
                     {claiming === ach.id ? '⏳ Claiming...' : '🎯 Claim Reward'}
                   </button>
