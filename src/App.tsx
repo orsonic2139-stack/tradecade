@@ -1112,7 +1112,17 @@ function SettingsModal({ settings, onClose, onSave }: { settings: UserSettings; 
   );
 }
 
-function TradeForm({ trade, onClose, onSave }: { trade: Trade | null; onClose: () => void; onSave: (trade: Omit<Trade, 'id' | 'created_at' | 'user_id'>, id?: string) => void }) {
+function TradeForm({ 
+  trade, 
+  onClose, 
+  onSave, 
+  settings 
+}: { 
+  trade: Trade | null; 
+  onClose: () => void; 
+  onSave: (trade: Omit<Trade, 'id' | 'created_at' | 'user_id'>, id?: string) => void;
+  settings: UserSettings;
+}) {
   const [form, setForm] = useState({
     trade_date: trade?.trade_date ?? new Date().toISOString().slice(0, 10),
     symbol: trade?.symbol ?? '',
@@ -1131,29 +1141,16 @@ function TradeForm({ trade, onClose, onSave }: { trade: Trade | null; onClose: (
   });
   const [uploading, setUploading] = useState(false);
   
-  // 自動計算 P&L (%)
+  // 自動計算 P&L (%) - 根據帳戶餘額
   const calculatePnLPercent = () => {
-    const entry = Number(form.entry_price);
-    const exit = Number(form.exit_price);
+    const pnlValue = Number(form.pnl);
+    const capital = settings.initial_capital || 1000;
     
-    if (!entry || !exit || entry === 0) return 0;
+    if (!pnlValue || capital === 0) return 0;
     
-    // 計算百分比變化
-    const change = ((exit - entry) / entry) * 100;
-    
-    // 如果是 Short，反向計算
-    return form.side === 'Short' ? -change : change;
+    // P&L (%) = (P&L / 帳戶餘額) × 100
+    return (pnlValue / capital) * 100;
   };
-  
-  // 當 Entry Price、Exit Price 或 Side 改變時自動更新 P&L (%)
-  useEffect(() => {
-    const pnlPercent = calculatePnLPercent();
-    // 只更新 P&L (%)，保留 P&L ($) 手動輸入
-    setForm(prev => ({
-      ...prev,
-      // 不自動覆蓋 pnl ($)，讓用戶手動輸入
-    }));
-  }, [form.entry_price, form.exit_price, form.side]);
   
   const update = (key: string, value: string) => setForm((current) => ({ ...current, [key]: value }));
   
@@ -1188,10 +1185,7 @@ function TradeForm({ trade, onClose, onSave }: { trade: Trade | null; onClose: (
   };
 
   // 獲取當前自動計算的 P&L (%)
-  const autoPnLPercent = calculatePnLPercent();
-  const displayPnLPercent = form.entry_price && form.exit_price 
-    ? autoPnLPercent 
-    : 0;
+  const displayPnLPercent = calculatePnLPercent();
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -1275,18 +1269,23 @@ function TradeForm({ trade, onClose, onSave }: { trade: Trade | null; onClose: (
               <input type="number" step="any" value={form.lot_size} onChange={(event) => update('lot_size', event.target.value)} placeholder="1" required />
             </label>
             <label>P&L ($)
-              <input type="number" step="any" value={form.pnl} onChange={(event) => update('pnl', event.target.value)} placeholder="0.00" required />
+              <input 
+                type="number" 
+                step="any" 
+                value={form.pnl} 
+                onChange={(event) => update('pnl', event.target.value)} 
+                placeholder="0.00" 
+                required 
+              />
             </label>
           </div>
           
-          {/* 自動計算的 P&L (%) 顯示 */}
+          {/* 自動計算的 P&L (%) 顯示 - 根據帳戶餘額 */}
           <div className={`calculated-result ${displayPnLPercent < 0 ? 'loss' : ''}`}>
-            <span>Auto-calculated P&L (%)</span>
+            <span>P&L (% of Account)</span>
             <strong>{displayPnLPercent >= 0 ? '+' : ''}{displayPnLPercent.toFixed(2)}%</strong>
             <small>
-              {form.entry_price && form.exit_price 
-                ? `(${form.side === 'Long' ? 'Long' : 'Short'} position)`
-                : 'Enter prices to calculate'}
+              Balance: ${settings.initial_capital.toLocaleString()}
             </small>
           </div>
           
