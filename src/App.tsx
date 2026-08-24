@@ -535,10 +535,13 @@ const claimAchievement = async (achievementId: string) => {
   setClaiming(achievementId);
 
   try {
-    // 更新成就為已領取
+    // ✅ 只更新 claimed = TRUE，不改變其他任何東西
     const { error } = await supabase
       .from('user_achievements')
-      .update({ claimed: true, claimed_at: new Date().toISOString() })
+      .update({ 
+        claimed: true, 
+        claimed_at: new Date().toISOString() 
+      })
       .eq('user_id', session.user.id)
       .eq('achievement_id', achievementId);
 
@@ -547,7 +550,7 @@ const claimAchievement = async (achievementId: string) => {
     // 找到成就的 XP 獎勵
     const ach = ACHIEVEMENTS_CONFIG.find(a => a.id === achievementId);
     if (ach) {
-      setToast(`+${ach.rewardXp} XP claimed for "${ach.name}"!`);
+      setToast(`🎉 +${ach.rewardXp} XP claimed for "${ach.name}"!`);
     } else {
       setToast('Achievement claimed!');
     }
