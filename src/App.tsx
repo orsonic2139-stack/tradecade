@@ -373,12 +373,30 @@ function App() {
           {view === 'calendar' && <CalendarView trades={trades} />}
         </div>
       </main>
-      {showForm && <TradeForm trade={editingTrade} onClose={() => { setShowForm(false); setEditingTrade(null); }} onSave={saveTrade} />}
-      {showSettings && <SettingsModal settings={settings} onClose={() => setShowSettings(false)} onSave={updateSettings} />}
-      {toast && <div className="toast"><ShieldCheck size={17} />{toast}</div>}
-    </div>
-  );
-}
+      {showForm && (
+  <TradeForm 
+    trade={editingTrade} 
+    onClose={() => { 
+      setShowForm(false); 
+      setEditingTrade(null); 
+    }} 
+    onSave={saveTrade}
+    settings={settings}  // ← 新增這行
+  />
+)}
+{showSettings && (
+  <SettingsModal 
+    settings={settings} 
+    onClose={() => setShowSettings(false)} 
+    onSave={updateSettings} 
+  />
+)}
+{toast && (
+  <div className="toast">
+    <ShieldCheck size={17} />
+    {toast}
+  </div>
+)}
 
 function AuthScreen({ onSignedIn }: { onSignedIn: (session: Session) => void }) {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
@@ -1144,6 +1162,12 @@ function TradeForm({
   // 自動計算 P&L (%) - 根據帳戶餘額
   const calculatePnLPercent = () => {
     const pnlValue = Number(form.pnl);
+    
+    // 防護檢查：確保 settings 存在且有 initial_capital
+    if (!settings || typeof settings.initial_capital !== 'number') {
+      return 0;
+    }
+    
     const capital = settings.initial_capital || 1000;
     
     if (!pnlValue || capital === 0) return 0;
@@ -1186,6 +1210,7 @@ function TradeForm({
 
   // 獲取當前自動計算的 P&L (%)
   const displayPnLPercent = calculatePnLPercent();
+  const displayCapital = settings?.initial_capital ?? 1000;
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -1269,14 +1294,7 @@ function TradeForm({
               <input type="number" step="any" value={form.lot_size} onChange={(event) => update('lot_size', event.target.value)} placeholder="1" required />
             </label>
             <label>P&L ($)
-              <input 
-                type="number" 
-                step="any" 
-                value={form.pnl} 
-                onChange={(event) => update('pnl', event.target.value)} 
-                placeholder="0.00" 
-                required 
-              />
+              <input type="number" step="any" value={form.pnl} onChange={(event) => update('pnl', event.target.value)} placeholder="0.00" required />
             </label>
           </div>
           
@@ -1285,7 +1303,7 @@ function TradeForm({
             <span>P&L (% of Account)</span>
             <strong>{displayPnLPercent >= 0 ? '+' : ''}{displayPnLPercent.toFixed(2)}%</strong>
             <small>
-              Balance: ${settings.initial_capital.toLocaleString()}
+              Balance: ${displayCapital.toLocaleString()}
             </small>
           </div>
           
