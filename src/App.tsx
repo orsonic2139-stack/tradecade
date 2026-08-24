@@ -447,13 +447,110 @@ function App() {
   };
 
   const deleteTrade = async (id: string) => {
-    if (!supabase) return;
-    const { error } = await supabase.from('trades').delete().eq('id', id);
-    if (error) { setToast('Could not delete this trade.'); return; }
-    setTrades((current) => current.filter((item) => item.id !== id));
-    setToast('Trade removed');
+  if (!supabase) return;
+  
+  // 先獲取要刪除的交易信息（用於確認）
+  const { data: tradeToDelete } = await supabase
+    .from('trades')
+    .select('user_id')
+    .eq('id', id)
+    .maybeSingle();
+  
+  if (!tradeToDelete) {
+    setToast('Trade not found');
+    return;
+  }
+  
+  // 刪除交易
+  const { error } = await supabase
+    .from('trades')
+    .delete()
+    .eq('id', id);
+    
+  if (error) { 
+    setToast('Could not delete this trade.'); 
+    console.error(error);
+    return; 
+  }
+  
+  // 從本地狀態移除
+  setTrades((current) => current.filter((item) => item.id !== id)); 
+  setToast('Trade removed');
+  
+  // 等待觸發器完成後刷新數據
+  setTimeout(async () => {
+    if (session) {
+      // 刷新統計
+      const { data: statsData } = await supabase
+        .from('user_stats')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+      
+      if (statsData) {
+        setStats(statsData as UserStats);
+      } else {
+        // 如果沒有數據，重置為默認值
+        setStats({
+          total_xp: 0,
+          level: 1,
+          total_trades: 0,
+          winning_trades: 0,
+          losing_trades: 0,
+          total_pnl: 0,
+          max_drawdown: 0,
+          current_streak: 0,
+          best_streak: 0,
+          profit_factor: 0,
+          avg_win: 0,
+          avg_loss: 0,
+          profitability_score: 0,
+          risk_score: 0,
+          discipline_score: 0,
+          consistency_score: 0,
+          experience_score: 0,
+          achievements: [],
+          claimed_xp: 0,
+          unclaimed_achievements: 0,
+        });
+      }
+      
+      // 刷新成就
+      const { data: achData } = await supabase
+        .from('user_achievements')
+        .select('*')
+        .eq('user_id', session.user.id);
+      
+      if (achData) {
+        setUserAchievements(achData as UserAchievement[]);
+      }
+    }
+  }, 1000);
+};
 
-    // Refresh stats and achievements
+const claimAchievement = async (achievementId: string) => {
+  if (!supabase || !session) return;
+  setClaiming(achievementId);
+
+  try {
+    // 更新成就為已領取
+    const { error } = await supabase
+      .from('user_achievements')
+      .update({ claimed: true, claimed_at: new Date().toISOString() })
+      .eq('user_id', session.user.id)
+      .eq('achievement_id', achievementId);
+
+    if (error) throw error;
+
+    // 找到成就的 XP 獎勵
+    const ach = ACHIEVEMENTS_CONFIG.find(a => a.id === achievementId);
+    if (ach) {
+      setToast(`+${ach.rewardXp} XP claimed for "${ach.name}"!`);
+    } else {
+      setToast('Achievement claimed!');
+    }
+
+    // 刷新數據
     setTimeout(() => {
       if (session) {
         supabase
@@ -472,77 +569,36 @@ function App() {
             if (data) setUserAchievements(data as UserAchievement[]);
           });
       }
-    }, 800);
-  };
+    }, 500);
 
-  const claimAchievement = async (achievementId: string) => {
-    if (!supabase || !session) return;
-    setClaiming(achievementId);
+  } catch (error) {
+    console.error('Claim error:', error);
+    setToast('Failed to claim achievement');
+  } finally {
+    setClaiming(null);
+  }
+};
 
-    try {
-      // 更新成就為已領取
-      const { error } = await supabase
-        .from('user_achievements')
-        .update({ claimed: true, claimed_at: new Date().toISOString() })
-        .eq('user_id', session.user.id)
-        .eq('achievement_id', achievementId);
+const updateSettings = async (capital: number) => {
+  if (!supabase || !session) return;
+  const { error } = await supabase
+    .from('user_settings')
+    .update({ initial_capital: capital })
+    .eq('user_id', session.user.id);
+  if (!error) {
+    setSettings({ initial_capital: capital });
+    setToast('Settings updated successfully');
+    setShowSettings(false);
+  } else {
+    setToast('Failed to update settings');
+    console.error(error);
+  }
+};
 
-      if (error) throw error;
-
-      // 找到成就的 XP 獎勵
-      const ach = ACHIEVEMENTS_CONFIG.find(a => a.id === achievementId);
-      if (ach) {
-        setToast(`+${ach.rewardXp} XP claimed for "${ach.name}"!`);
-      } else {
-        setToast('Achievement claimed!');
-      }
-
-      // 刷新數據
-      setTimeout(() => {
-        if (session) {
-          supabase
-            .from('user_stats')
-            .select('*')
-            .eq('user_id', session.user.id)
-            .maybeSingle()
-            .then(({ data }) => {
-              if (data) setStats(data as UserStats);
-            });
-          supabase
-            .from('user_achievements')
-            .select('*')
-            .eq('user_id', session.user.id)
-            .then(({ data }) => {
-              if (data) setUserAchievements(data as UserAchievement[]);
-            });
-        }
-      }, 500);
-
-    } catch (error) {
-      console.error('Claim error:', error);
-      setToast('Failed to claim achievement');
-    } finally {
-      setClaiming(null);
-    }
-  };
-
-  const updateSettings = async (capital: number) => {
-    if (!supabase || !session) return;
-    const { error } = await supabase
-      .from('user_settings')
-      .update({ initial_capital: capital })
-      .eq('user_id', session.user.id);
-    if (!error) {
-      setSettings({ initial_capital: capital });
-      setToast('Settings updated successfully');
-      setShowSettings(false);
-    } else {
-      setToast('Failed to update settings');
-      console.error(error);
-    }
-  };
-
-  const logout = () => { supabase?.auth.signOut(); setSession(null); };
+const logout = () => { 
+  supabase?.auth.signOut(); 
+  setSession(null); 
+};
 
   // Get unclaimed achievements
   const getUnclaimedAchievements = () => {
