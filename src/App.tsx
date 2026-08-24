@@ -1649,17 +1649,28 @@ function AchievementsView({
       />
 
       <div className="achievement-filters">
-        <button className={filter === 'all' ? 'active' : ''} onClick={() => setFilter('all')}>All</button>
-        <button className={filter === 'unlocked' ? 'active' : ''} onClick={() => setFilter('unlocked')}>
-          Unlocked ({totalUnlocked})
-        </button>
-        <button className={filter === 'unclaimed' ? 'active' : ''} onClick={() => setFilter('unclaimed')}>
-          🎁 Ready to Claim ({totalUnclaimed})
-        </button>
-        <button className={filter === 'locked' ? 'active' : ''} onClick={() => setFilter('locked')}>
-          Locked ({ACHIEVEMENTS_CONFIG.length - totalUnlocked})
-        </button>
-      </div>
+  <div className="filter-left">
+    <button className={filter === 'all' ? 'active' : ''} onClick={() => setFilter('all')}>All</button>
+    <button className={filter === 'unlocked' ? 'active' : ''} onClick={() => setFilter('unlocked')}>
+      Unlocked ({totalUnlocked})
+    </button>
+    <button className={filter === 'unclaimed' ? 'active' : ''} onClick={() => setFilter('unclaimed')}>
+      Ready to Claim ({totalUnclaimed})
+    </button>
+    <button className={filter === 'locked' ? 'active' : ''} onClick={() => setFilter('locked')}>
+      Locked ({ACHIEVEMENTS_CONFIG.length - totalUnlocked})
+    </button>
+  </div>
+  {totalUnclaimed > 0 && (
+    <button 
+      className="claim-all-button"
+      onClick={() => handleClaimAll()}
+      disabled={claimingAll}
+    >
+      {claimingAll ? '⏳ Claiming...' : 'Claim All'}
+    </button>
+  )}
+</div>
 
       <div className="achievements-grid">
         {filteredAchievements.map((ach) => (
