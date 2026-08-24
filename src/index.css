@@ -1522,3 +1522,20 @@ td strong { display: block; font: 10px 'DM Mono'; }
   color: #f0b96a;
   font-weight: 600;
 }
+
+/* ============================================
+   CHART - Dual Color Line
+   ============================================ */
+
+.chart-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.chart-area .chart {
+  height: 190px;
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+}

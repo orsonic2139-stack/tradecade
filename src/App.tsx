@@ -1514,7 +1514,7 @@ function Overview({ trades, settings, stats, onAdd, onViewJournal }: { trades: T
       <div className="stats-grid">
         <StatCard label="Net P&L" value={money(statsData.net)} change="+12.8%" icon={CircleDollarSign} />
         <StatCard label="Win rate" value={`${statsData.winRate.toFixed(1)}%`} change="+4.6%" icon={Target} tone="blue" />
-        <StatCard label="Profit factor" value={statsData.profitFactor.toFixed(2)} change="+0.32" icon={TrendingUp} tone="orange" />
+        <StatCard label="Profit factor" value={statsData.profitFactor === Infinity ? '∞' : statsData.profitFactor.toFixed(2)} change="+0.32" icon={TrendingUp} tone="orange" />
         <StatCard label="Total trades" value={String(trades.length)} change="+8" icon={Activity} tone="pink" />
       </div>
 
@@ -1524,29 +1524,120 @@ function Overview({ trades, settings, stats, onAdd, onViewJournal }: { trades: T
             <div><h3>Performance overview</h3><span>Equity curve · Last 30 days</span></div>
             <button className="select-button">Last 30 days <ChevronDown size={14} /></button>
           </div>
+          
+          {/* ✅ Dual Color Line Chart */}
           <div className="chart-area">
-            <div className="y-labels"><span>+$2k</span><span>+$1k</span><span>$0</span><span>-$1k</span></div>
+            <div className="y-labels">
+              <span>+$2k</span>
+              <span>+$1k</span>
+              <span>$0</span>
+              <span>-$1k</span>
+            </div>
             <div className="chart">
-              <div className="grid-line line-1" /><div className="grid-line line-2" />
-              <div className="grid-line line-3" /><div className="grid-line line-4" />
+              <div className="grid-line line-1" />
+              <div className="grid-line line-2" />
+              <div className="grid-line line-3" />
+              <div className="grid-line line-4" />
               <div className="zero-line" />
-              <div className="bars">
-                {statsData.chart.map((item, index) => (
-                  <div className="bar-wrap" key={index}>
-                    <div className={`bar ${item.value < 0 ? 'loss' : ''}`}
-                      style={{ height: `${Math.max(8, Math.abs(item.value) / max * 72)}%`, transform: item.value < 0 ? 'translateY(100%)' : undefined }} />
-                    <span>{item.label}</span>
-                  </div>
-                ))}
-              </div>
+              
+              <svg className="chart-svg" viewBox="0 0 500 180" preserveAspectRatio="xMidYMid meet">
+                {statsData.chart.length > 0 && (
+                  <>
+                    {(() => {
+                      const points = statsData.chart.map((item, index) => {
+                        const x = 30 + (index / (statsData.chart.length - 1 || 1)) * 440;
+                        const y = 90 - (item.value / Math.max(max, 1)) * 70;
+                        return { x, y, value: item.value };
+                      });
+                      
+                      // 分離綠色和紅色線段
+                      let greenSegments: string[] = [];
+                      let redSegments: string[] = [];
+                      let currentColor: 'green' | 'red' | null = null;
+                      let currentPoints: { x: number; y: number }[] = [];
+                      
+                      for (let i = 0; i < points.length; i++) {
+                        const p = points[i];
+                        const isGreen = p.value >= 0;
+                        const color = isGreen ? 'green' : 'red';
+                        
+                        if (currentColor !== color && currentPoints.length > 0) {
+                          if (currentColor === 'green') {
+                            greenSegments.push(currentPoints.map(p => `${p.x},${p.y}`).join(' '));
+                          } else if (currentColor === 'red') {
+                            redSegments.push(currentPoints.map(p => `${p.x},${p.y}`).join(' '));
+                          }
+                          currentPoints = [];
+                        }
+                        currentColor = color;
+                        currentPoints.push(p);
+                      }
+                      
+                      if (currentPoints.length > 0) {
+                        if (currentColor === 'green') {
+                          greenSegments.push(currentPoints.map(p => `${p.x},${p.y}`).join(' '));
+                        } else if (currentColor === 'red') {
+                          redSegments.push(currentPoints.map(p => `${p.x},${p.y}`).join(' '));
+                        }
+                      }
+                      
+                      if (points.length === 1) {
+                        const p = points[0];
+                        return <circle cx={p.x} cy={p.y} r="4" fill={p.value >= 0 ? '#2bc99a' : '#e8756d'} />;
+                      }
+                      
+                      return (
+                        <>
+                          {/* 綠色線條（獲利） */}
+                          {greenSegments.map((d, i) => (
+                            <polyline 
+                              key={`g-${i}`} 
+                              points={d} 
+                              fill="none" 
+                              stroke="#2bc99a" 
+                              strokeWidth="2.5" 
+                              strokeLinecap="round" 
+                              strokeLinejoin="round" 
+                            />
+                          ))}
+                          {/* 紅色線條（虧損） */}
+                          {redSegments.map((d, i) => (
+                            <polyline 
+                              key={`r-${i}`} 
+                              points={d} 
+                              fill="none" 
+                              stroke="#e8756d" 
+                              strokeWidth="2.5" 
+                              strokeLinecap="round" 
+                              strokeLinejoin="round" 
+                            />
+                          ))}
+                          {/* 端點圓點 */}
+                          {points.map((p, i) => (
+                            <circle 
+                              key={`dot-${i}`} 
+                              cx={p.x} 
+                              cy={p.y} 
+                              r="3.5" 
+                              fill={p.value >= 0 ? '#2bc99a' : '#e8756d'} 
+                            />
+                          ))}
+                        </>
+                      );
+                    })()}
+                  </>
+                )}
+              </svg>
             </div>
           </div>
+          
           <div className="chart-footer">
             <span><i className="legend-dot green" /> Profitable days</span>
             <span><i className="legend-dot red" /> Losing days</span>
             <strong>Net {money(statsData.net)}</strong>
           </div>
         </section>
+        
         <section className="panel setup-panel">
           <div className="panel-heading">
             <div><h3>Setup performance</h3><span>Where your edge comes from</span></div>
@@ -1562,6 +1653,7 @@ function Overview({ trades, settings, stats, onAdd, onViewJournal }: { trades: T
           <button className="text-button" onClick={onViewJournal}>View all setups <ArrowUpRight size={15} /></button>
         </section>
       </div>
+      
       <section className="panel recent-panel">
         <div className="panel-heading">
           <div><h3>Recent trades</h3><span>Your latest activity</span></div>
@@ -1582,7 +1674,16 @@ function useStats(trades: Trade[], settings: UserSettings) {
   const wins = trades.filter((trade) => trade.pnl > 0).length;
   const totalWins = trades.filter(t => t.pnl > 0).reduce((sum, t) => sum + t.pnl, 0);
   const totalLosses = Math.abs(trades.filter(t => t.pnl < 0).reduce((sum, t) => sum + t.pnl, 0));
-  const profitFactor = totalLosses > 0 ? totalWins / totalLosses : totalWins > 0 ? 999 : 0;
+  
+  // ✅ 修正 Profit Factor 計算
+  let profitFactor = 0;
+  if (trades.length === 0) {
+    profitFactor = 0;
+  } else if (totalLosses === 0) {
+    profitFactor = Infinity; // 沒有虧損時顯示無限大
+  } else {
+    profitFactor = totalWins / totalLosses;
+  }
 
   const chart = trades.slice(0, 7).reverse().map((trade, index) => ({
     value: trade.pnl,
