@@ -60,23 +60,36 @@ type UserStats = {
 
 type View = 'overview' | 'journal' | 'analytics' | 'calendar';
 
-// 等級配置
+// 等級配置 - 28 個段位（完整版）
 const LEVEL_CONFIG = [
-  { level: 1, title: 'Rookie', icon: '🥚', xpRequired: 0 },
-  { level: 2, title: 'Paper Trader', icon: '📈', xpRequired: 100 },
-  { level: 3, title: 'Chart Observer', icon: '📊', xpRequired: 250 },
-  { level: 4, title: 'Pattern Hunter', icon: '🎯', xpRequired: 500 },
-  { level: 5, title: 'Momentum Trader', icon: '⚡', xpRequired: 800 },
-  { level: 6, title: 'Risk Manager', icon: '🛡️', xpRequired: 1200 },
-  { level: 7, title: 'Swing Trader', icon: '🎨', xpRequired: 1800 },
-  { level: 8, title: 'Position Trader', icon: '🐋', xpRequired: 2500 },
-  { level: 9, title: 'Market Analyst', icon: '🦅', xpRequired: 3500 },
-  { level: 10, title: 'Elite Trader', icon: '🔥', xpRequired: 5000 },
-  { level: 11, title: 'Diamond Hands', icon: '💎', xpRequired: 7500 },
-  { level: 12, title: 'Trading Legend', icon: '🏆', xpRequired: 10000 },
-  { level: 13, title: 'Market Master', icon: '👑', xpRequired: 15000 },
-  { level: 14, title: 'Alpha Hunter', icon: '🚀', xpRequired: 25000 },
-  { level: 15, title: 'Trading God', icon: '🌟', xpRequired: 50000 },
+  { level: 1, title: 'Rookie I', icon: '🥉', xpRequired: 0 },
+  { level: 2, title: 'Rookie II', icon: '🥉', xpRequired: 30 },
+  { level: 3, title: 'Rookie III', icon: '🥉', xpRequired: 70 },
+  { level: 4, title: 'Hunter I', icon: '🎯', xpRequired: 120 },
+  { level: 5, title: 'Hunter II', icon: '🎯', xpRequired: 180 },
+  { level: 6, title: 'Hunter III', icon: '🎯', xpRequired: 250 },
+  { level: 7, title: 'Trader I', icon: '📊', xpRequired: 340 },
+  { level: 8, title: 'Trader II', icon: '📊', xpRequired: 440 },
+  { level: 9, title: 'Trader III', icon: '📊', xpRequired: 560 },
+  { level: 10, title: 'Elite Trader I', icon: '⚡', xpRequired: 700 },
+  { level: 11, title: 'Elite Trader II', icon: '⚡', xpRequired: 860 },
+  { level: 12, title: 'Elite Trader III', icon: '⚡', xpRequired: 1040 },
+  { level: 13, title: 'Diamond Hands I', icon: '💎', xpRequired: 1250 },
+  { level: 14, title: 'Diamond Hands II', icon: '💎', xpRequired: 1490 },
+  { level: 15, title: 'Diamond Hands III', icon: '💎', xpRequired: 1760 },
+  { level: 16, title: 'Trading Legend I', icon: '🏆', xpRequired: 2080 },
+  { level: 17, title: 'Trading Legend II', icon: '🏆', xpRequired: 2440 },
+  { level: 18, title: 'Trading Legend III', icon: '🏆', xpRequired: 2850 },
+  { level: 19, title: 'Market Master I', icon: '👑', xpRequired: 3320 },
+  { level: 20, title: 'Market Master II', icon: '👑', xpRequired: 3850 },
+  { level: 21, title: 'Market Master III', icon: '👑', xpRequired: 4450 },
+  { level: 22, title: 'Alpha Hunter I', icon: '🚀', xpRequired: 5130 },
+  { level: 23, title: 'Alpha Hunter II', icon: '🚀', xpRequired: 5890 },
+  { level: 24, title: 'Alpha Hunter III', icon: '🚀', xpRequired: 6740 },
+  { level: 25, title: 'Trading God ⭐', icon: '🌟', xpRequired: 7700 },
+  { level: 26, title: 'Trading God ⭐⭐', icon: '🌟', xpRequired: 8780 },
+  { level: 27, title: 'Trading God ⭐⭐⭐', icon: '🌟', xpRequired: 9990 },
+  { level: 28, title: 'Trading God ∞', icon: '👑🌟', xpRequired: 11350 },
 ];
 
 // 成就配置
@@ -1111,13 +1124,36 @@ function TradeForm({ trade, onClose, onSave }: { trade: Trade | null; onClose: (
     stop_loss: String(trade?.stop_loss ?? ''),
     lot_size: String(trade?.lot_size ?? '1'),
     pnl: String(trade?.pnl ?? ''),
-    pnl_percent: String(trade?.pnl_percent ?? ''),
     setup: trade?.setup ?? 'Breakout',
     notes: trade?.notes ?? '',
     tags: trade?.tags.join(', ') ?? '',
     screenshot_url: trade?.screenshot_url ?? ''
   });
   const [uploading, setUploading] = useState(false);
+  
+  // 自動計算 P&L (%)
+  const calculatePnLPercent = () => {
+    const entry = Number(form.entry_price);
+    const exit = Number(form.exit_price);
+    
+    if (!entry || !exit || entry === 0) return 0;
+    
+    // 計算百分比變化
+    const change = ((exit - entry) / entry) * 100;
+    
+    // 如果是 Short，反向計算
+    return form.side === 'Short' ? -change : change;
+  };
+  
+  // 當 Entry Price、Exit Price 或 Side 改變時自動更新 P&L (%)
+  useEffect(() => {
+    const pnlPercent = calculatePnLPercent();
+    // 只更新 P&L (%)，保留 P&L ($) 手動輸入
+    setForm(prev => ({
+      ...prev,
+      // 不自動覆蓋 pnl ($)，讓用戶手動輸入
+    }));
+  }, [form.entry_price, form.exit_price, form.side]);
   
   const update = (key: string, value: string) => setForm((current) => ({ ...current, [key]: value }));
   
@@ -1151,6 +1187,12 @@ function TradeForm({ trade, onClose, onSave }: { trade: Trade | null; onClose: (
     }
   };
 
+  // 獲取當前自動計算的 P&L (%)
+  const autoPnLPercent = calculatePnLPercent();
+  const displayPnLPercent = form.entry_price && form.exit_price 
+    ? autoPnLPercent 
+    : 0;
+
   const submit = (event: FormEvent) => {
     event.preventDefault();
     onSave({
@@ -1161,7 +1203,7 @@ function TradeForm({ trade, onClose, onSave }: { trade: Trade | null; onClose: (
       stop_loss: form.stop_loss ? Number(form.stop_loss) : undefined,
       lot_size: Number(form.lot_size),
       pnl: Number(form.pnl),
-      pnl_percent: Number(form.pnl_percent),
+      pnl_percent: displayPnLPercent, // 自動計算的 P&L (%)
       status: 'Closed',
       tags: form.tags.split(',').map((tag) => tag.trim()).filter(Boolean),
       screenshot_url: form.screenshot_url || undefined
@@ -1235,9 +1277,17 @@ function TradeForm({ trade, onClose, onSave }: { trade: Trade | null; onClose: (
             <label>P&L ($)
               <input type="number" step="any" value={form.pnl} onChange={(event) => update('pnl', event.target.value)} placeholder="0.00" required />
             </label>
-            <label>P&L (%)
-              <input type="number" step="any" value={form.pnl_percent} onChange={(event) => update('pnl_percent', event.target.value)} placeholder="0.00" required />
-            </label>
+          </div>
+          
+          {/* 自動計算的 P&L (%) 顯示 */}
+          <div className={`calculated-result ${displayPnLPercent < 0 ? 'loss' : ''}`}>
+            <span>Auto-calculated P&L (%)</span>
+            <strong>{displayPnLPercent >= 0 ? '+' : ''}{displayPnLPercent.toFixed(2)}%</strong>
+            <small>
+              {form.entry_price && form.exit_price 
+                ? `(${form.side === 'Long' ? 'Long' : 'Short'} position)`
+                : 'Enter prices to calculate'}
+            </small>
           </div>
           
           <div className="screenshot-upload">
