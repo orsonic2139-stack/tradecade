@@ -46,7 +46,7 @@ type AchievementDef = {
   rewardXp: number;
   isMonthly?: boolean;
   requirement?: (trades: Trade[]) => boolean;
-  monthlyRequirement?: (monthlyTrades: Trade[]) => boolean;
+  monthlyRequirement?: (monthlyTrades: Trade[], settings?: UserSettings) => boolean; // ✅ 加入 settings?
 };
 
 type UserSettings = {
@@ -360,10 +360,6 @@ const ACHIEVEMENTS_CONFIG: AchievementDef[] = [
   { id: 'avg_win_50', name: '$50 Average Winner', description: 'Average win ≥ $50 (min 10 trades)', icon: '📈', category: 'pnl', rewardXp: 30, isMonthly: false, requirement: (t) => t.length >= 10 && getAvgWin(t) >= 50 },
   { id: 'avg_win_200', name: '$200 Average Winner', description: 'Average win ≥ $200 (min 10 trades)', icon: '📈', category: 'pnl', rewardXp: 60, isMonthly: false, requirement: (t) => t.length >= 10 && getAvgWin(t) >= 200 },
   { id: 'avg_win_500', name: '$500 Average Winner', description: 'Average win ≥ $500 (min 10 trades)', icon: '📈', category: 'pnl', rewardXp: 100, isMonthly: false, requirement: (t) => t.length >= 10 && getAvgWin(t) >= 500 },
-  { id: 'max_single_loss_100', name: 'Max Loss < $100', description: 'Maximum single loss < $100', icon: '🛡️', category: 'risk', rewardXp: 40, isMonthly: false, requirement: (t) => t.every(trade => trade.pnl >= -100) },
-  { id: 'max_single_loss_50', name: 'Max Loss < $50', description: 'Maximum single loss < $50', icon: '🛡️', category: 'risk', rewardXp: 80, isMonthly: false, requirement: (t) => t.every(trade => trade.pnl >= -50) },
-  { id: 'max_single_loss_20', name: 'Max Loss < $20', description: 'Maximum single loss < $20', icon: '💎', category: 'risk', rewardXp: 150, isMonthly: false, requirement: (t) => t.every(trade => trade.pnl >= -20) },
-  { id: 'win_loss_ratio_2', name: '2:1 Win/Loss Ratio', description: 'Win rate ≥ 66% (min 20 trades)', icon: '🎯', category: 'pnl', rewardXp: 80, isMonthly: false, requirement: (t) => t.length >= 20 && (t.filter(trade => trade.pnl > 0).length / t.length) >= 0.66 },
 
   // ============================================
   // 5. 風險管理成就 (5個累計)
@@ -375,7 +371,7 @@ const ACHIEVEMENTS_CONFIG: AchievementDef[] = [
   { id: 'perfect_risk', name: 'Perfect Risk', description: 'Use stop loss on 100% of trades (min 10 trades)', icon: '💎', category: 'risk', rewardXp: 120, isMonthly: false, requirement: (t) => getSLRate(t) >= 1.0 && t.length >= 10 },
 
   // ============================================
-  // 6. 風險管理月度成就 (8個)
+  // 6. 風險管理月度成就 (11個)
   // ============================================
   { id: 'monthly_risk_reward_2', name: '2:1 Monthly Risk-Reward', description: 'Monthly risk-reward ≥ 2.0 (claim on last day)', icon: '📈', category: 'monthly', rewardXp: 120, isMonthly: true,
     monthlyRequirement: (m) => m.length >= 5 && getMonthlyRiskReward(m) >= 2 },
@@ -393,6 +389,10 @@ const ACHIEVEMENTS_CONFIG: AchievementDef[] = [
     monthlyRequirement: (m) => getMonthlyTotalStopLoss(m) < 250 },
   { id: 'monthly_sl_100', name: 'Stop Loss < $100', description: 'Monthly total stop loss < $100 (claim on last day)', icon: '👑', category: 'monthly', rewardXp: 400, isMonthly: true,
     monthlyRequirement: (m) => getMonthlyTotalStopLoss(m) < 100 },
+    
+  // ============================================
+  // 風險管理累計成就 (3個)
+  // ============================================
   { id: 'max_drawdown_10', name: 'Drawdown < 10%', description: 'Maximum drawdown < 10% (min 10 trades)', icon: '📉', category: 'risk', rewardXp: 50, isMonthly: false, requirement: (t) => t.length >= 10 && getMaxDrawdown(t) < 10 },
   { id: 'max_drawdown_5', name: 'Drawdown < 5%', description: 'Maximum drawdown < 5% (min 10 trades)', icon: '📉', category: 'risk', rewardXp: 100, isMonthly: false, requirement: (t) => t.length >= 10 && getMaxDrawdown(t) < 5 },
   { id: 'max_drawdown_2', name: 'Drawdown < 2%', description: 'Maximum drawdown < 2% (min 10 trades)', icon: '💎', category: 'risk', rewardXp: 200, isMonthly: false, requirement: (t) => t.length >= 10 && getMaxDrawdown(t) < 2 },
@@ -698,14 +698,18 @@ function App() {
         let isConditionMet = false;
 
         if (ach.isMonthly) {
-          if (isLastDay && ach.monthlyRequirement) {
-            isConditionMet = ach.monthlyRequirement(monthlyTrades);
-          }
-        } else {
-          if (ach.requirement) {
-            isConditionMet = ach.requirement(currentTrades);
-          }
-        }
+  // 月度成就：只有當月最後一天才檢查，傳入 settings
+  if (isLastDay && ach.monthlyRequirement) {
+    isConditionMet = ach.monthlyRequirement(monthlyTrades, settings);
+  }
+} else {
+  // 累計成就：需要有交易才能檢查
+  if (currentTrades.length === 0) {
+    isConditionMet = false;
+  } else if (ach.requirement) {
+    isConditionMet = ach.requirement(currentTrades);
+  }
+}
 
         const existing = existingMap.get(ach.id);
 
