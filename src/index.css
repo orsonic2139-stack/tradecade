@@ -431,3 +431,376 @@ td strong { display: block; font: 10px 'DM Mono'; }
   .trade-modal { padding: 16px; }
   .topbar { padding: 0 12px; height: 56px; }
 }
+
+/* ============================================
+   RANKING SYSTEM STYLES
+   ============================================ */
+
+.ranking-panel {
+  background: linear-gradient(135deg, #111a22, #0d151d);
+  border: 1px solid #202a33;
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+}
+
+.ranking-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.level-display {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.level-badge {
+  position: relative;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #24d39a, #1a8f6a);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 30px rgba(36, 211, 154, 0.15);
+}
+
+.level-badge .level-icon {
+  font-size: 24px;
+}
+
+.level-badge .level-number {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  background: #0d1117;
+  border: 2px solid #24d39a;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #24d39a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.level-info h3 {
+  margin: 0;
+  color: #e4ebef;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.level-info .level-xp {
+  color: #788795;
+  font-size: 12px;
+  font-family: 'DM Mono', monospace;
+}
+
+.xp-progress {
+  flex: 1;
+  min-width: 180px;
+}
+
+.xp-bar {
+  height: 6px;
+  background: #1a232e;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.xp-bar .xp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #24d39a, #48e0af);
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.xp-text {
+  display: block;
+  color: #788795;
+  font-size: 10px;
+  margin-top: 4px;
+  font-family: 'DM Mono', monospace;
+}
+
+.ranking-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  padding: 16px 0;
+  border-top: 1px solid #202a33;
+  border-bottom: 1px solid #202a33;
+  margin-bottom: 16px;
+}
+
+.ranking-stat {
+  text-align: center;
+}
+
+.ranking-stat .stat-label {
+  display: block;
+  color: #6a7a86;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.ranking-stat strong {
+  display: block;
+  color: #e4ebef;
+  font-size: 18px;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.ranking-radar {
+  margin-bottom: 16px;
+}
+
+.radar-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+
+.radar-item {
+  text-align: center;
+}
+
+.radar-circle {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 4px;
+  border-radius: 50%;
+  background: conic-gradient(#24d39a var(--score), #1a232e var(--score));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.radar-circle::before {
+  content: '';
+  position: absolute;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #0d151d;
+}
+
+.radar-circle span {
+  position: relative;
+  color: #e4ebef;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: 'DM Mono', monospace;
+}
+
+.radar-item label {
+  display: block;
+  color: #6a7a86;
+  font-size: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.ranking-achievements {
+  border-top: 1px solid #202a33;
+  padding-top: 14px;
+}
+
+.achievement-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.achievement-header span {
+  color: #b7c3cd;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.achievement-header small {
+  color: #6a7a86;
+  font-size: 10px;
+}
+
+.achievement-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.achievement-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  position: relative;
+  transition: 0.2s;
+}
+
+.achievement-badge.unlocked {
+  background: #1a2e28;
+  border: 1px solid #2a5a4a;
+  opacity: 1;
+}
+
+.achievement-badge.locked {
+  background: #141c24;
+  border: 1px solid #202a33;
+  opacity: 0.4;
+  filter: grayscale(1);
+}
+
+.achievement-badge .achievement-check {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #24d39a;
+  color: #071a15;
+  font-size: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+.achievement-badge:hover {
+  transform: scale(1.1);
+}
+
+/* Analytics Rank Summary */
+.analytics-rank-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  background: #131b23;
+  border: 1px solid #222e39;
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+}
+
+.rank-summary-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rank-summary-item span {
+  color: #6a7a86;
+  font-size: 10px;
+  min-width: 50px;
+}
+
+.rank-summary-item strong {
+  color: #e4ebef;
+  font-size: 16px;
+  font-weight: 700;
+  font-family: 'DM Mono', monospace;
+  min-width: 30px;
+}
+
+.rank-summary-item .mini-score-bar {
+  flex: 1;
+  height: 4px;
+  background: #1a232e;
+  border-radius: 2px;
+  overflow: hidden;
+  min-width: 40px;
+}
+
+.rank-summary-item .mini-score-bar div {
+  height: 100%;
+  background: linear-gradient(90deg, #24d39a, #48e0af);
+  border-radius: 2px;
+  transition: width 0.5s ease;
+}
+
+/* Responsive Ranking */
+@media (max-width: 768px) {
+  .ranking-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .level-display {
+    justify-content: center;
+  }
+  
+  .ranking-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .radar-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .analytics-rank-summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .rank-summary-item {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 480px) {
+  .level-badge {
+    width: 48px;
+    height: 48px;
+  }
+  
+  .level-badge .level-icon {
+    font-size: 18px;
+  }
+  
+  .level-badge .level-number {
+    width: 20px;
+    height: 20px;
+    font-size: 8px;
+  }
+  
+  .ranking-stat strong {
+    font-size: 15px;
+  }
+  
+  .radar-circle {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .radar-circle::before {
+    width: 30px;
+    height: 30px;
+  }
+  
+  .radar-circle span {
+    font-size: 10px;
+  }
+  
+  .achievement-badge {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+  }
+}

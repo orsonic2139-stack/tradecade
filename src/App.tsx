@@ -6,7 +6,8 @@ import {
   Activity, ArrowDownRight, ArrowUpRight, BarChart3, BookOpen, CalendarDays,
   ChevronDown, CircleDollarSign, Clock3, LayoutDashboard, LogOut, Menu,
   Moon, Plus, Search, Settings, ShieldCheck, SlidersHorizontal, Sparkles,
-  Target, TrendingUp, X, Zap, Upload, DollarSign, AlertCircle
+  Target, TrendingUp, X, Zap, Upload, DollarSign, Award, Trophy, Star, 
+  Flame, Crown, Shield, Brain, TrendingDown, GitBranch, Medal, Gem
 } from 'lucide-react';
 
 type Trade = {
@@ -33,14 +34,68 @@ type Trade = {
 
 type UserSettings = {
   initial_capital: number;
+  ranking_enabled?: boolean;
+};
+
+type UserStats = {
+  total_xp: number;
+  level: number;
+  total_trades: number;
+  winning_trades: number;
+  losing_trades: number;
+  total_pnl: number;
+  max_drawdown: number;
+  current_streak: number;
+  best_streak: number;
+  profit_factor: number;
+  avg_win: number;
+  avg_loss: number;
+  profitability_score: number;
+  risk_score: number;
+  discipline_score: number;
+  consistency_score: number;
+  experience_score: number;
+  achievements: string[];
 };
 
 type View = 'overview' | 'journal' | 'analytics' | 'calendar';
 
-const seedTrades: Trade[] = [
-  { id: '1', trade_date: '2024-06-18', symbol: 'NVDA', market: 'Stocks', side: 'Long', timeframe: '4H', entry_price: 118.42, exit_price: 124.86, stop_loss: 115.00, lot_size: 40, pnl: 257.6, pnl_percent: 5.44, setup: 'Breakout', status: 'Closed', notes: 'Clean continuation above weekly resistance.', tags: ['A+ setup', 'AI'] },
-  { id: '2', trade_date: '2024-06-17', symbol: 'BTC/USD', market: 'Crypto', side: 'Short', timeframe: '1H', entry_price: 66820, exit_price: 65940, stop_loss: 67200, lot_size: 0.18, pnl: 158.4, pnl_percent: 1.31, setup: 'Reversal', status: 'Closed', notes: 'Waited for liquidity sweep before entry.', tags: ['patience'] },
+// 等級配置
+const LEVEL_CONFIG = [
+  { level: 1, title: 'Rookie', icon: '🥚', xpRequired: 0 },
+  { level: 2, title: 'Paper Trader', icon: '📈', xpRequired: 100 },
+  { level: 3, title: 'Chart Observer', icon: '📊', xpRequired: 250 },
+  { level: 4, title: 'Pattern Hunter', icon: '🎯', xpRequired: 500 },
+  { level: 5, title: 'Momentum Trader', icon: '⚡', xpRequired: 800 },
+  { level: 6, title: 'Risk Manager', icon: '🛡️', xpRequired: 1200 },
+  { level: 7, title: 'Swing Trader', icon: '🎨', xpRequired: 1800 },
+  { level: 8, title: 'Position Trader', icon: '🐋', xpRequired: 2500 },
+  { level: 9, title: 'Market Analyst', icon: '🦅', xpRequired: 3500 },
+  { level: 10, title: 'Elite Trader', icon: '🔥', xpRequired: 5000 },
+  { level: 11, title: 'Diamond Hands', icon: '💎', xpRequired: 7500 },
+  { level: 12, title: 'Trading Legend', icon: '🏆', xpRequired: 10000 },
+  { level: 13, title: 'Market Master', icon: '👑', xpRequired: 15000 },
+  { level: 14, title: 'Alpha Hunter', icon: '🚀', xpRequired: 25000 },
+  { level: 15, title: 'Trading God', icon: '🌟', xpRequired: 50000 },
 ];
+
+// 成就配置
+const ACHIEVEMENTS = {
+  first_trade: { id: 'first_trade', name: 'First Trade', icon: '🎯', description: 'Log your first trade' },
+  ten_trades: { id: 'ten_trades', name: 'Double Digits', icon: '📊', description: 'Complete 10 trades' },
+  fifty_trades: { id: 'fifty_trades', name: 'Half Century', icon: '💪', description: 'Complete 50 trades' },
+  hundred_trades: { id: 'hundred_trades', name: 'Century Club', icon: '🏅', description: 'Complete 100 trades' },
+  first_profit: { id: 'first_profit', name: 'First Profit', icon: '💰', description: 'Make your first profitable trade' },
+  big_winner: { id: 'big_winner', name: 'Big Winner', icon: '🐋', description: 'Make $1000+ on a single trade' },
+  legendary_trade: { id: 'legendary_trade', name: 'Legendary Trade', icon: '🌟', description: 'Make $5000+ on a single trade' },
+  high_win_rate: { id: 'high_win_rate', name: 'Sharpshooter', icon: '🎯', description: 'Maintain 70%+ win rate' },
+  risk_manager: { id: 'risk_manager', name: 'Risk Manager', icon: '🛡️', description: 'Use stop loss on 50%+ of trades' },
+  always_protected: { id: 'always_protected', name: 'Always Protected', icon: '💎', description: 'Use stop loss on 90%+ of trades' },
+  journal_keeper: { id: 'journal_keeper', name: 'Journal Keeper', icon: '📝', description: 'Write notes on 70%+ of trades' },
+  screenshot_pro: { id: 'screenshot_pro', name: 'Screenshot Pro', icon: '📸', description: 'Upload screenshots on 50%+ of trades' },
+  profit_factor_2: { id: 'profit_factor_2', name: '2x Profit Factor', icon: '📈', description: 'Achieve profit factor of 2.0+' },
+  profit_factor_3: { id: 'profit_factor_3', name: 'Elite Profit Factor', icon: '🚀', description: 'Achieve profit factor of 3.0+' },
+};
 
 const navItems: { id: View; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
@@ -57,6 +112,7 @@ function App() {
   const [authLoading, setAuthLoading] = useState(true);
   const [trades, setTrades] = useState<Trade[]>([]);
   const [settings, setSettings] = useState<UserSettings>({ initial_capital: 10000 });
+  const [stats, setStats] = useState<UserStats | null>(null);
   const [view, setView] = useState<View>('overview');
   const [showForm, setShowForm] = useState(false);
   const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
@@ -69,20 +125,62 @@ function App() {
     if (!session || !supabase) return;
     supabase
       .from('user_settings')
-      .select('initial_capital')
+      .select('*')
       .eq('user_id', session.user.id)
       .maybeSingle()
       .then(({ data, error }) => {
         if (!error && data) {
           setSettings(data as UserSettings);
         } else {
-          // Create default settings if not exists
           supabase
             .from('user_settings')
             .insert({ user_id: session.user.id, initial_capital: 10000 })
             .then(() => setSettings({ initial_capital: 10000 }));
         }
       });
+  }, [session]);
+
+  // Load user stats
+  useEffect(() => {
+    if (!session || !supabase) return;
+    const loadStats = () => {
+      supabase
+        .from('user_stats')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .maybeSingle()
+        .then(({ data, error }) => {
+          if (!error && data) {
+            setStats(data as UserStats);
+          } else {
+            // Create default stats
+            supabase
+              .from('user_stats')
+              .insert({ user_id: session.user.id })
+              .then(() => setStats({
+                total_xp: 0,
+                level: 1,
+                total_trades: 0,
+                winning_trades: 0,
+                losing_trades: 0,
+                total_pnl: 0,
+                max_drawdown: 0,
+                current_streak: 0,
+                best_streak: 0,
+                profit_factor: 0,
+                avg_win: 0,
+                avg_loss: 0,
+                profitability_score: 0,
+                risk_score: 0,
+                discipline_score: 0,
+                consistency_score: 0,
+                experience_score: 0,
+                achievements: [],
+              }));
+          }
+        });
+    };
+    loadStats();
   }, [session]);
 
   useEffect(() => {
@@ -132,6 +230,19 @@ function App() {
     setShowForm(false); 
     setEditingTrade(null); 
     setToast(id ? 'Trade updated' : 'Trade logged');
+    // Refresh stats
+    setTimeout(() => {
+      if (session) {
+        supabase
+          .from('user_stats')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .maybeSingle()
+          .then(({ data }) => {
+            if (data) setStats(data as UserStats);
+          });
+      }
+    }, 500);
   };
 
   const deleteTrade = async (id: string) => {
@@ -140,26 +251,36 @@ function App() {
     if (error) { setToast('Could not delete this trade.'); return; }
     setTrades((current) => current.filter((item) => item.id !== id)); 
     setToast('Trade removed');
+    // Refresh stats
+    setTimeout(() => {
+      if (session) {
+        supabase
+          .from('user_stats')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .maybeSingle()
+          .then(({ data }) => {
+            if (data) setStats(data as UserStats);
+          });
+      }
+    }, 500);
   };
 
   const updateSettings = async (capital: number) => {
-  if (!supabase || !session) return;
-  
-  // 接受任何數字（包括 0 和負數）
-  const { error } = await supabase
-    .from('user_settings')
-    .update({ initial_capital: capital })
-    .eq('user_id', session.user.id);
-  
-  if (!error) {
-    setSettings({ initial_capital: capital });
-    setToast('Settings updated successfully');
-    setShowSettings(false);
-  } else {
-    setToast('Failed to update settings');
-    console.error(error);
-  }
-};
+    if (!supabase || !session) return;
+    const { error } = await supabase
+      .from('user_settings')
+      .update({ initial_capital: capital })
+      .eq('user_id', session.user.id);
+    if (!error) {
+      setSettings({ initial_capital: capital });
+      setToast('Settings updated successfully');
+      setShowSettings(false);
+    } else {
+      setToast('Failed to update settings');
+      console.error(error);
+    }
+  };
 
   const logout = () => { supabase?.auth.signOut(); setSession(null); };
 
@@ -188,11 +309,11 @@ function App() {
           ))}
         </nav>
         <div className="sidebar-bottom">
-          <div className="pro-card">
-            <div className="pro-icon"><Sparkles size={16} /></div>
+          <div className="pro-card" onClick={() => setShowSettings(true)} style={{ cursor: 'pointer' }}>
+            <div className="pro-icon">{stats ? LEVEL_CONFIG[stats.level - 1]?.icon || '📊' : '📊'}</div>
             <div>
-              <strong>Account Capital</strong>
-              <span>${settings.initial_capital.toLocaleString()}</span>
+              <strong>Level {stats?.level || 1}</strong>
+              <span className="capital-amount">${settings.initial_capital.toLocaleString()}</span>
             </div>
             <ChevronDown size={15} />
           </div>
@@ -226,9 +347,9 @@ function App() {
           </div>
         </header>
         <div className="page-content">
-          {view === 'overview' && <Overview trades={trades} settings={settings} onAdd={() => { setEditingTrade(null); setShowForm(true); }} onViewJournal={() => setView('journal')} />}
+          {view === 'overview' && <Overview trades={trades} settings={settings} stats={stats} onAdd={() => { setEditingTrade(null); setShowForm(true); }} onViewJournal={() => setView('journal')} />}
           {view === 'journal' && <Journal trades={trades} onAdd={() => { setEditingTrade(null); setShowForm(true); }} onEdit={(trade) => { setEditingTrade(trade); setShowForm(true); }} onDelete={deleteTrade} />}
-          {view === 'analytics' && <Analytics trades={trades} settings={settings} />}
+          {view === 'analytics' && <Analytics trades={trades} settings={settings} stats={stats} />}
           {view === 'calendar' && <CalendarView trades={trades} />}
         </div>
       </main>
@@ -347,9 +468,139 @@ function StatCard({ label, value, change, icon: Icon, tone = 'green' }: { label:
   );
 }
 
-function Overview({ trades, settings, onAdd, onViewJournal }: { trades: Trade[]; settings: UserSettings; onAdd: () => void; onViewJournal: () => void }) {
-  const stats = useStats(trades, settings);
-  const max = Math.max(...stats.chart.map((item) => Math.abs(item.value)), 1);
+// ============================================
+// RANKING SYSTEM COMPONENTS
+// ============================================
+
+function RankingDisplay({ stats, trades }: { stats: UserStats | null; trades: Trade[] }) {
+  if (!stats) return null;
+  
+  const levelInfo = LEVEL_CONFIG[stats.level - 1] || LEVEL_CONFIG[0];
+  const nextLevel = LEVEL_CONFIG[stats.level] || null;
+  const xpProgress = nextLevel ? (stats.total_xp - levelInfo.xpRequired) / (nextLevel.xpRequired - levelInfo.xpRequired) * 100 : 100;
+  const xpToNext = nextLevel ? nextLevel.xpRequired - stats.total_xp : 0;
+  
+  // 計算 streak
+  let currentStreak = 0;
+  let bestStreak = 0;
+  let streak = 0;
+  const sortedTrades = [...trades].sort((a, b) => new Date(a.trade_date).getTime() - new Date(b.trade_date).getTime());
+  
+  for (const trade of sortedTrades) {
+    if (trade.pnl > 0) {
+      streak++;
+      if (streak > bestStreak) bestStreak = streak;
+    } else {
+      streak = 0;
+    }
+  }
+  currentStreak = streak;
+
+  // 獲取已解鎖成就
+  const unlockedAchievements = stats.achievements || [];
+  const totalAchievements = Object.keys(ACHIEVEMENTS).length;
+  
+  return (
+    <div className="ranking-panel">
+      <div className="ranking-header">
+        <div className="level-display">
+          <div className="level-badge">
+            <span className="level-icon">{levelInfo.icon}</span>
+            <span className="level-number">{stats.level}</span>
+          </div>
+          <div className="level-info">
+            <h3>{levelInfo.title}</h3>
+            <span className="level-xp">{stats.total_xp.toLocaleString()} XP</span>
+          </div>
+        </div>
+        <div className="xp-progress">
+          <div className="xp-bar">
+            <div className="xp-fill" style={{ width: `${Math.min(100, xpProgress)}%` }} />
+          </div>
+          <span className="xp-text">
+            {nextLevel ? `${xpToNext.toLocaleString()} XP to ${nextLevel.title}` : 'MAX LEVEL'}
+          </span>
+        </div>
+      </div>
+      
+      <div className="ranking-stats">
+        <div className="ranking-stat">
+          <span className="stat-label">Win Rate</span>
+          <strong>{stats.total_trades > 0 ? ((stats.winning_trades / stats.total_trades) * 100).toFixed(1) : 0}%</strong>
+        </div>
+        <div className="ranking-stat">
+          <span className="stat-label">Profit Factor</span>
+          <strong>{stats.profit_factor.toFixed(2)}</strong>
+        </div>
+        <div className="ranking-stat">
+          <span className="stat-label">Best Streak</span>
+          <strong>{bestStreak}🔥</strong>
+        </div>
+        <div className="ranking-stat">
+          <span className="stat-label">Achievements</span>
+          <strong>{unlockedAchievements.length}/{totalAchievements}</strong>
+        </div>
+      </div>
+      
+      <div className="ranking-radar">
+        <div className="radar-grid">
+          <div className="radar-item">
+            <div className="radar-circle" style={{ '--score': `${stats.profitability_score}%` } as React.CSSProperties}>
+              <span>{stats.profitability_score}</span>
+            </div>
+            <label>Profit</label>
+          </div>
+          <div className="radar-item">
+            <div className="radar-circle" style={{ '--score': `${stats.risk_score}%` } as React.CSSProperties}>
+              <span>{stats.risk_score}</span>
+            </div>
+            <label>Risk</label>
+          </div>
+          <div className="radar-item">
+            <div className="radar-circle" style={{ '--score': `${stats.discipline_score}%` } as React.CSSProperties}>
+              <span>{stats.discipline_score}</span>
+            </div>
+            <label>Discipline</label>
+          </div>
+          <div className="radar-item">
+            <div className="radar-circle" style={{ '--score': `${stats.consistency_score}%` } as React.CSSProperties}>
+              <span>{stats.consistency_score}</span>
+            </div>
+            <label>Consistency</label>
+          </div>
+          <div className="radar-item">
+            <div className="radar-circle" style={{ '--score': `${stats.experience_score}%` } as React.CSSProperties}>
+              <span>{stats.experience_score}</span>
+            </div>
+            <label>Experience</label>
+          </div>
+        </div>
+      </div>
+      
+      <div className="ranking-achievements">
+        <div className="achievement-header">
+          <span>Achievements</span>
+          <small>{unlockedAchievements.length}/{totalAchievements}</small>
+        </div>
+        <div className="achievement-grid">
+          {Object.values(ACHIEVEMENTS).map((ach) => {
+            const unlocked = unlockedAchievements.includes(ach.id);
+            return (
+              <div key={ach.id} className={`achievement-badge ${unlocked ? 'unlocked' : 'locked'}`} title={ach.description}>
+                <span>{ach.icon}</span>
+                {unlocked && <div className="achievement-check">✓</div>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Overview({ trades, settings, stats, onAdd, onViewJournal }: { trades: Trade[]; settings: UserSettings; stats: UserStats | null; onAdd: () => void; onViewJournal: () => void }) {
+  const statsData = useStats(trades, settings);
+  const max = Math.max(...statsData.chart.map((item) => Math.abs(item.value)), 1);
   
   return (
     <>
@@ -359,12 +610,17 @@ function Overview({ trades, settings, onAdd, onViewJournal }: { trades: Trade[];
         description={`Account Balance: $${settings.initial_capital.toLocaleString()}`}
         action={<button className="primary-button" onClick={onAdd}><Plus size={17} /> Log a trade</button>} 
       />
+      
+      {/* Ranking System */}
+      <RankingDisplay stats={stats} trades={trades} />
+      
       <div className="stats-grid">
-        <StatCard label="Net P&L" value={money(stats.net)} change="+12.8%" icon={CircleDollarSign} />
-        <StatCard label="Win rate" value={`${stats.winRate.toFixed(1)}%`} change="+4.6%" icon={Target} tone="blue" />
-        <StatCard label="Profit factor" value={stats.profitFactor.toFixed(2)} change="+0.32" icon={TrendingUp} tone="orange" />
+        <StatCard label="Net P&L" value={money(statsData.net)} change="+12.8%" icon={CircleDollarSign} />
+        <StatCard label="Win rate" value={`${statsData.winRate.toFixed(1)}%`} change="+4.6%" icon={Target} tone="blue" />
+        <StatCard label="Profit factor" value={statsData.profitFactor.toFixed(2)} change="+0.32" icon={TrendingUp} tone="orange" />
         <StatCard label="Total trades" value={String(trades.length)} change="+8" icon={Activity} tone="pink" />
       </div>
+      
       <div className="dashboard-grid">
         <section className="panel performance-panel">
           <div className="panel-heading">
@@ -388,7 +644,7 @@ function Overview({ trades, settings, onAdd, onViewJournal }: { trades: Trade[];
               <div className="grid-line line-4" />
               <div className="zero-line" />
               <div className="bars">
-                {stats.chart.map((item, index) => (
+                {statsData.chart.map((item, index) => (
                   <div className="bar-wrap" key={index}>
                     <div className={`bar ${item.value < 0 ? 'loss' : ''}`} 
                       style={{ 
@@ -405,7 +661,7 @@ function Overview({ trades, settings, onAdd, onViewJournal }: { trades: Trade[];
           <div className="chart-footer">
             <span><i className="legend-dot green" /> Profitable days</span>
             <span><i className="legend-dot red" /> Losing days</span>
-            <strong>Net {money(stats.net)}</strong>
+            <strong>Net {money(statsData.net)}</strong>
           </div>
         </section>
         <section className="panel setup-panel">
@@ -416,7 +672,7 @@ function Overview({ trades, settings, onAdd, onViewJournal }: { trades: Trade[];
             </div>
             <button className="more-button">•••</button>
           </div>
-          {stats.setups.map((setup) => (
+          {statsData.setups.map((setup) => (
             <div className="setup-row" key={setup.name}>
               <div className="setup-name">
                 <span className="setup-dot" />
@@ -449,7 +705,6 @@ function Overview({ trades, settings, onAdd, onViewJournal }: { trades: Trade[];
 function useStats(trades: Trade[], settings: UserSettings) {
   const net = trades.reduce((sum, trade) => sum + trade.pnl, 0);
   const wins = trades.filter((trade) => trade.pnl > 0).length;
-  const losses = trades.filter((trade) => trade.pnl < 0).length;
   const totalWins = trades.filter(t => t.pnl > 0).reduce((sum, t) => sum + t.pnl, 0);
   const totalLosses = Math.abs(trades.filter(t => t.pnl < 0).reduce((sum, t) => sum + t.pnl, 0));
   const profitFactor = totalLosses > 0 ? totalWins / totalLosses : totalWins > 0 ? 999 : 0;
@@ -472,7 +727,7 @@ function useStats(trades: Trade[], settings: UserSettings) {
     rate: (item.pnl / Math.max(net, 1)) * 100 
   })).sort((a, b) => b.pnl - a.pnl).slice(0, 4);
   
-  return { net, winRate: trades.length ? wins / trades.length * 100 : 0, chart, setups, profitFactor, wins, losses };
+  return { net, winRate: trades.length ? wins / trades.length * 100 : 0, chart, setups, profitFactor };
 }
 
 function Journal({ trades, onAdd, onEdit, onDelete }: { trades: Trade[]; onAdd: () => void; onEdit: (trade: Trade) => void; onDelete: (id: string) => void }) {
@@ -580,8 +835,8 @@ function TradeTable({ trades, compact = false, onEdit, onDelete }: { trades: Tra
   );
 }
 
-function Analytics({ trades, settings }: { trades: Trade[]; settings: UserSettings }) {
-  const stats = useStats(trades, settings);
+function Analytics({ trades, settings, stats }: { trades: Trade[]; settings: UserSettings; stats: UserStats | null }) {
+  const statsData = useStats(trades, settings);
   const winners = trades.filter((trade) => trade.pnl > 0);
   const losers = trades.filter((trade) => trade.pnl < 0);
   
@@ -593,11 +848,47 @@ function Analytics({ trades, settings }: { trades: Trade[]; settings: UserSettin
         description="Understand the patterns behind your performance." 
         action={<button className="select-button"><CalendarDays size={15} /> Jun 2024 <ChevronDown size={14} /></button>} 
       />
+      
+      {/* Ranking Radar Summary */}
+      {stats && (
+        <div className="analytics-rank-summary">
+          <div className="rank-summary-item">
+            <span>Level</span>
+            <strong>{stats.level}</strong>
+          </div>
+          <div className="rank-summary-item">
+            <span>XP</span>
+            <strong>{stats.total_xp.toLocaleString()}</strong>
+          </div>
+          <div className="rank-summary-item">
+            <span>Profitability</span>
+            <div className="mini-score-bar">
+              <div style={{ width: `${stats.profitability_score}%` }} />
+            </div>
+            <strong>{stats.profitability_score}</strong>
+          </div>
+          <div className="rank-summary-item">
+            <span>Risk Management</span>
+            <div className="mini-score-bar">
+              <div style={{ width: `${stats.risk_score}%` }} />
+            </div>
+            <strong>{stats.risk_score}</strong>
+          </div>
+          <div className="rank-summary-item">
+            <span>Discipline</span>
+            <div className="mini-score-bar">
+              <div style={{ width: `${stats.discipline_score}%` }} />
+            </div>
+            <strong>{stats.discipline_score}</strong>
+          </div>
+        </div>
+      )}
+      
       <div className="stats-grid">
         <StatCard label="Average winner" value={money(winners.length ? winners.reduce((a, b) => a + b.pnl, 0) / winners.length : 0)} icon={ArrowUpRight} />
         <StatCard label="Average loser" value={money(losers.length ? losers.reduce((a, b) => a + b.pnl, 0) / losers.length : 0)} icon={ArrowDownRight} tone="pink" />
         <StatCard label="Best trade" value={money(Math.max(...trades.map((trade) => trade.pnl), 0))} icon={Zap} tone="orange" />
-        <StatCard label="Expectancy" value={money(trades.length ? stats.net / trades.length : 0)} icon={TrendingUp} tone="blue" />
+        <StatCard label="Expectancy" value={money(trades.length ? statsData.net / trades.length : 0)} icon={TrendingUp} tone="blue" />
       </div>
       <div className="analytics-grid">
         <section className="panel">
@@ -608,16 +899,16 @@ function Analytics({ trades, settings }: { trades: Trade[]; settings: UserSettin
             </div>
           </div>
           <div className="distribution">
-            <div className="donut" style={{ '--win': `${stats.winRate}%` } as React.CSSProperties}>
+            <div className="donut" style={{ '--win': `${statsData.winRate}%` } as React.CSSProperties}>
               <div>
-                <strong>{stats.winRate.toFixed(0)}%</strong>
+                <strong>{statsData.winRate.toFixed(0)}%</strong>
                 <span>win rate</span>
               </div>
             </div>
             <div className="distribution-legend">
               <div><i className="legend-dot green" /><span>Winning trades</span><strong>{winners.length}</strong></div>
               <div><i className="legend-dot red" /><span>Losing trades</span><strong>{losers.length}</strong></div>
-              <div><i className="legend-dot blue" /><span>Total P&L</span><strong>{money(stats.net)}</strong></div>
+              <div><i className="legend-dot blue" /><span>Total P&L</span><strong>{money(statsData.net)}</strong></div>
             </div>
           </div>
         </section>
@@ -630,18 +921,18 @@ function Analytics({ trades, settings }: { trades: Trade[]; settings: UserSettin
           </div>
           <div className="score-row">
             <div><Target size={16} /> Followed plan</div>
-            <strong>86%</strong>
-            <div className="score-bar"><span style={{ width: '86%' }} /></div>
+            <strong>{stats?.discipline_score || 0}%</strong>
+            <div className="score-bar"><span style={{ width: `${stats?.discipline_score || 0}%` }} /></div>
           </div>
           <div className="score-row">
-            <div><Clock3 size={16} /> Held to target</div>
-            <strong>74%</strong>
-            <div className="score-bar"><span style={{ width: '74%' }} /></div>
+            <div><ShieldCheck size={16} /> Risk management</div>
+            <strong>{stats?.risk_score || 0}%</strong>
+            <div className="score-bar"><span style={{ width: `${stats?.risk_score || 0}%` }} /></div>
           </div>
           <div className="score-row">
-            <div><ShieldCheck size={16} /> Managed risk</div>
-            <strong>91%</strong>
-            <div className="score-bar"><span style={{ width: '91%' }} /></div>
+            <div><TrendingUp size={16} /> Consistency</div>
+            <strong>{stats?.consistency_score || 0}%</strong>
+            <div className="score-bar"><span style={{ width: `${stats?.consistency_score || 0}%` }} /></div>
           </div>
           <div className="score-row" style={{ borderBottom: 'none', paddingBottom: '4px' }}>
             <div><DollarSign size={16} /> Account balance</div>
@@ -700,35 +991,23 @@ function CalendarView({ trades }: { trades: Trade[] }) {
 }
 
 function SettingsModal({ settings, onClose, onSave }: { settings: UserSettings; onClose: () => void; onSave: (capital: number) => void }) {
-  const [capital, setCapital] = useState(String(settings.initial_capital ?? ''));
+  const [capital, setCapital] = useState(String(settings.initial_capital || 0));
   const [error, setError] = useState('');
   
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     setError('');
-    
     const trimmedValue = capital.trim();
-    
     if (trimmedValue === '') {
       setError('Please enter an amount');
       return;
     }
-    
     const value = Number(trimmedValue);
-    
     if (isNaN(value)) {
       setError('Please enter a valid number');
       return;
     }
-    
-    // 接受任何數字
     onSave(value);
-  };
-  
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSubmit(e);
-    }
   };
   
   return (
@@ -763,7 +1042,6 @@ function SettingsModal({ settings, onClose, onSave }: { settings: UserSettings; 
                     setCapital(e.target.value);
                     setError('');
                   }}
-                  onKeyDown={handleKeyDown}
                   placeholder="10000" 
                   required 
                   style={{ 
@@ -799,8 +1077,7 @@ function SettingsModal({ settings, onClose, onSave }: { settings: UserSettings; 
               marginTop: '8px',
               lineHeight: '1.5'
             }}>
-              This will be used to track your overall performance.<br />
-              You can enter any amount (including 0).
+              This will be used to track your overall performance.
             </p>
           </div>
           <div className="modal-actions" style={{ marginTop: '8px' }}>
@@ -858,10 +1135,10 @@ function TradeForm({ trade, onClose, onSave }: { trade: Trade | null; onClose: (
         .getPublicUrl(filePath);
       
       update('screenshot_url', publicUrl);
-      setToast('Screenshot uploaded successfully');
+      alert('Screenshot uploaded successfully');
     } catch (error) {
       console.error('Upload error:', error);
-      setToast('Failed to upload screenshot');
+      alert('Failed to upload screenshot');
     } finally {
       setUploading(false);
     }
@@ -996,11 +1273,6 @@ function TradeForm({ trade, onClose, onSave }: { trade: Trade | null; onClose: (
       </div>
     </div>
   );
-}
-
-function setToast(arg0: string) {
-  // This is a placeholder - the actual setToast is in App component
-  console.log('Toast:', arg0);
 }
 
 export default App;
