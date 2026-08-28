@@ -2637,7 +2637,7 @@ function LotSizeCalculator({ accountBalance }: { accountBalance: number }) {
           <label>Contract Size</label>
           <input
             type="text"
-            value="100,000"
+            value="100"
             disabled
             className="balance-display"
           />
