@@ -1303,31 +1303,38 @@ useEffect(() => {
   
   {/* Topbar 內容 - 在上層 */}
   <div style={{ 
-    position: 'relative',
-    zIndex: 1,
-    display: 'flex', 
-    alignItems: 'center', 
-    justifyContent: 'space-between', 
-    width: '100%',
-    height: '100%',
-    padding: '0 42px',
-  }}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-      <button className="icon-button menu-button" onClick={() => setMobileNav(true)}><Menu size={20} /></button>
-      <div className="breadcrumb">
-        <span>Workspace</span>
-        <span>/</span>
-        <strong>{navItems.find((item) => item.id === view)?.label}</strong>
-      </div>
-    </div>
-    <div className="topbar-actions">
-      <button className="icon-button" onClick={toggleTheme}>
-        {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-      </button>
-      <button className="notification"><span /></button>
-      <div className="avatar small">{initials(email)}</div>
+  position: 'relative',
+  zIndex: 1,
+  display: 'flex', 
+  alignItems: 'center', 
+  justifyContent: 'space-between', 
+  width: '100%',
+  height: '48px',                    // ← 改為固定高度
+  minHeight: '48px',                 // ← 新增
+  padding: '0 42px',
+  margin: '4px 12px',                // ← 新增
+  background: 'rgba(13, 17, 23, 0.5)',  // ← 新增
+  backdropFilter: 'blur(12px)',      // ← 新增
+  borderRadius: '16px',              // ← 新增
+  border: '1px solid rgba(255, 255, 255, 0.06)',  // ← 新增
+  boxShadow: '0 4px 30px rgba(0, 0, 0, 0.2)',     // ← 新增
+}}>
+  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+    <button className="icon-button menu-button" onClick={() => setMobileNav(true)}><Menu size={20} /></button>
+    <div className="breadcrumb">
+      <span>Workspace</span>
+      <span>/</span>
+      <strong>{navItems.find((item) => item.id === view)?.label}</strong>
     </div>
   </div>
+  <div className="topbar-actions">
+    <button className="icon-button" onClick={toggleTheme}>
+      {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+    </button>
+    <button className="notification"><span /></button>
+    <div className="avatar small">{initials(email)}</div>
+  </div>
+</div>
 </header>
 
         <div className="page-content">
