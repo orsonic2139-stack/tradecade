@@ -557,7 +557,8 @@ const ACHIEVEMENTS_CONFIG: AchievementDef[] = [
 // NAVIGATION
 // ============================================
 
-const navItems: { id: View; label: string; icon: typeof LayoutDashboard }[] = [
+// ✅ 使用 React.ElementType 替代
+const navItems: { id: View; label: string; icon: React.ElementType }[] = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
   { id: 'journal', label: 'Trade journal', icon: BookOpen },
   { id: 'analytics', label: 'Analytics', icon: BarChart3 },
@@ -2474,7 +2475,7 @@ function AchievementsView({
   Ruler: Ruler,
   Camera: Camera,
 };
-    const IconComponent = iconMap[ach.icon] || AwardIcon;
+    const IconComponent = iconMap[ach.icon] || Award;
     return <IconComponent size={24} strokeWidth={1.5} />;
   })()}
 </div>
