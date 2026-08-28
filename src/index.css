@@ -22,8 +22,8 @@
    ============================================ */
 
 .sidebar {
-  width: 244px;
-  flex: 0 0 244px;
+  width: 280px;
+  flex: 0 0 280px;
   border-right: 1px solid #202832;
   background: #11171f;
   padding: 26px 16px 18px;
@@ -33,7 +33,6 @@
   position: sticky;
   top: 0;
   overflow: hidden;
-  /* 防止整個 sidebar 滾動 */
 }
 
 .sidebar-top {
@@ -159,21 +158,28 @@ nav {
   display: block;
 }
 
+/* 調整 pro-card 內部文字 */
 .pro-card strong {
-  font-size: 10px;
+  font-size: 11px;
   color: #dbe8e7;
 }
 
 .pro-card span {
   color: #6e8087;
-  font-size: 9px;
+  font-size: 10px;
   margin-top: 4px;
 }
 
 .pro-card .capital-amount {
   color: #24d39a;
   font-weight: 700;
-  font-size: 11px;
+  font-size: 12px;
+}
+
+/* 調整 nav-item 字體 */
+.nav-item {
+  font-size: 13px;
+  padding: 11px 14px;
 }
 
 .profile {
