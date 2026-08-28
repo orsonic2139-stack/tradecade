@@ -1180,8 +1180,8 @@ useEffect(() => {
           <div className="brand">
   <img 
     src={theme === 'dark' 
-      ? 'https://dgsiastfgrssvsmosafu.supabase.co/storage/v1/object/public/logo/darkmode.png' 
-      : 'https://dgsiastfgrssvsmosafu.supabase.co/storage/v1/object/public/logo/lightmode.png'
+      ? 'https://dgsiastfgrssvsmosafu.supabase.co/storage/v1/object/public/logo/dark-theme-logo.png' 
+      : 'https://dgsiastfgrssvsmosafu.supabase.co/storage/v1/object/public/logo/light-theme-logo.png'
     } 
     alt="Tradecade Logo" 
     className="brand-logo"
