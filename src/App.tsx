@@ -2183,7 +2183,7 @@ function LotSizeCalculator({ accountBalance }: { accountBalance: number }) {
   const [result, setResult] = useState<LotSizeCalculatorResult | null>(null);
   const [error, setError] = useState('');
 
-  const contractSize = 100000;
+  const contractSize = 100;
 
   const calculate = () => {
     setError('');
