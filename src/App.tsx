@@ -1285,7 +1285,7 @@ useEffect(() => {
     <Ferrofluid
   colors={["#68ff7c", "#68ff7c"]}
   speed={0.3}
-  scale={1.1}
+  scale={4}
   turbulence={1}
   fluidity={0.05}
   rimWidth={0.2}
