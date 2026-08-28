@@ -1268,39 +1268,50 @@ useEffect(() => {
 
       <main className="main-content">
         <header className="topbar" style={{ position: 'relative', overflow: 'hidden' }}>
-  {/* 波浪背景 */}
-  <GradientWaves
-    horizonColor="#48d9a9"
-    waveColor="#0d1117"
-    crestColor="#24d39a"
-    speed={0.6}
-    amplitude={2.75}
-    waveScale={0.7}
-    waveRatio={0.5}
-    swell={26}
-    turbulence={24.5}
-    tilt={1.1}
-    zoom={1.0}
-    height={5}
-    fogDepth={19}
-    detail="high"
-    brightness={1.0}
-    opacity={0.35}
-    mouseInteraction={true}
-    parallaxStrength={0.5}
-    grain={false}
-    grainIntensity={0}
-  />
+  {/* 波浪背景 - 作為絕對定位的背景層 */}
+  <div style={{
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 0,  // ← 確保在底層
+    pointerEvents: 'none', // ← 讓鼠標事件穿透
+  }}>
+    <GradientWaves
+      horizonColor="#48d9a9"
+      waveColor="#0d1117"
+      crestColor="#24d39a"
+      speed={0.6}
+      amplitude={2.75}
+      waveScale={0.7}
+      waveRatio={0.5}
+      swell={26}
+      turbulence={24.5}
+      tilt={1.1}
+      zoom={1.0}
+      height={5}
+      fogDepth={19}
+      detail="high"
+      brightness={1.0}
+      opacity={0.35}
+      mouseInteraction={true}
+      parallaxStrength={0.5}
+      grain={false}
+      grainIntensity={0}
+    />
+  </div>
   
-  {/* Topbar 內容 */}
+  {/* Topbar 內容 - 在 z-index 上層 */}
   <div style={{ 
-    position: 'relative', 
-    zIndex: 2, 
+    position: 'relative',
+    zIndex: 1,  // ← 確保在波浪上方
     display: 'flex', 
     alignItems: 'center', 
     justifyContent: 'space-between', 
     width: '100%',
-    height: '100%'
+    height: '100%',
+    padding: '0 42px',  // ← 恢復原有的 padding
   }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
       <button className="icon-button menu-button" onClick={() => setMobileNav(true)}><Menu size={20} /></button>
