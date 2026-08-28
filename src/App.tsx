@@ -31,6 +31,8 @@ import {
 
 // ✅ 加入 useTheme
 import { useTheme } from './context/ThemeContext';
+// ✅ 新增骨架屏導入
+import { SkeletonCard, SkeletonStats, SkeletonTable, SkeletonRanking } from './components/Skeleton';
 
 // ============================================
 // TYPES
@@ -613,6 +615,7 @@ function App() {
   const [toast, setToast] = useState('');
   const [claiming, setClaiming] = useState<string | null>(null);
   const [showCalculator, setShowCalculator] = useState(false);
+const [isLoading, setIsLoading] = useState(true);
 
   // Load user settings
   useEffect(() => {
@@ -633,6 +636,13 @@ function App() {
         }
       });
   }, [session]);
+
+// ✅ 當 trades 或 stats 加載完成後，關閉 loading
+useEffect(() => {
+  if (trades.length > 0 || stats) {
+    setIsLoading(false);
+  }
+}, [trades, stats]);
 
   // Load user stats
   useEffect(() => {
@@ -1267,29 +1277,55 @@ function App() {
 
         <div className="page-content">
           {view === 'overview' && (
-            <Overview
-              trades={trades}
-              settings={settings}
-              stats={stats}
-              onAdd={() => { setEditingTrade(null); setShowForm(true); }}
-              onViewJournal={() => setView('journal')}
-            />
-          )}
+  isLoading ? (
+    <div className="page-content">
+      <SkeletonRanking />
+      <SkeletonStats />
+      <div className="dashboard-grid">
+        <SkeletonCard count={2} />
+      </div>
+      <SkeletonTable rows={3} />
+    </div>
+  ) : (
+    <Overview
+      trades={trades}
+      settings={settings}
+      stats={stats}
+      onAdd={() => { setEditingTrade(null); setShowForm(true); }}
+      onViewJournal={() => setView('journal')}
+    />
+  )
+)}
           {view === 'journal' && (
-            <Journal
-              trades={trades}
-              onAdd={() => { setEditingTrade(null); setShowForm(true); }}
-              onEdit={(trade) => { setEditingTrade(trade); setShowForm(true); }}
-              onDelete={deleteTrade}
-            />
-          )}
+  isLoading ? (
+    <div className="page-content">
+      <SkeletonTable rows={8} />
+    </div>
+  ) : (
+    <Journal
+      trades={trades}
+      onAdd={() => { setEditingTrade(null); setShowForm(true); }}
+      onEdit={(trade) => { setEditingTrade(trade); setShowForm(true); }}
+      onDelete={deleteTrade}
+    />
+  )
+)}
           {view === 'analytics' && (
-            <Analytics
-              trades={trades}
-              settings={settings}
-              stats={stats}
-            />
-          )}
+  isLoading ? (
+    <div className="page-content">
+      <SkeletonStats />
+      <div className="analytics-grid">
+        <SkeletonCard count={2} />
+      </div>
+    </div>
+  ) : (
+    <Analytics
+      trades={trades}
+      settings={settings}
+      stats={stats}
+    />
+  )
+)}
           {view === 'calendar' && <CalendarView trades={trades} />}
           {view === 'achievements' && (
             <AchievementsView
@@ -1320,11 +1356,14 @@ function App() {
       )}
 
       {toast && (
-        <div className="toast">
-          <ShieldCheck size={17} />
-          {toast}
-        </div>
-      )}
+  <div className={`toast ${toast.includes('🎉') ? 'toast-success' : toast.includes('⚠️') ? 'toast-warning' : 'toast-info'}`}>
+    <span className="toast-icon">
+      {toast.includes('🎉') ? '🎉' : toast.includes('⚠️') ? '⚠️' : 'ℹ️'}
+    </span>
+    <span className="toast-message">{toast.replace(/[🎉⚠️ℹ️]/g, '').trim()}</span>
+    <button className="toast-close" onClick={() => setToast('')}>✕</button>
+  </div>
+)}
     </div>
   );
 }

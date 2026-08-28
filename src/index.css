@@ -2840,3 +2840,441 @@ td strong {
   color: #f0b96a;
   font-weight: 600;
 }
+
+/* ============================================
+   SKELETON LOADING
+   ============================================ */
+
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-hover) 25%, var(--bg-card) 50%, var(--bg-hover) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+  border-radius: 6px;
+}
+
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.skeleton-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 20px;
+}
+
+.skeleton-title {
+  width: 60%;
+  height: 20px;
+  margin-bottom: 12px;
+}
+
+.skeleton-text {
+  width: 90%;
+  height: 14px;
+  margin-bottom: 8px;
+}
+
+.skeleton-text-short {
+  width: 40%;
+  height: 14px;
+}
+
+.skeleton-label {
+  width: 40%;
+  height: 12px;
+  margin-bottom: 8px;
+}
+
+.skeleton-value {
+  width: 70%;
+  height: 28px;
+  margin-bottom: 8px;
+}
+
+.skeleton-change {
+  width: 50%;
+  height: 14px;
+}
+
+.skeleton-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+  margin-bottom: 18px;
+}
+
+.skeleton-stat {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 18px;
+}
+
+.skeleton-ranking {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+}
+
+.skeleton-ranking-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.skeleton-badge {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.skeleton-ranking-info {
+  flex: 1;
+}
+
+.skeleton-progress {
+  width: 100%;
+  height: 6px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+}
+
+.skeleton-ranking-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+}
+
+.skeleton-stat-item {
+  height: 40px;
+  border-radius: 4px;
+}
+
+.skeleton-table {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 16px;
+  overflow: hidden;
+}
+
+.skeleton-table-header {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1.5fr 0.8fr 1.2fr;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 12px;
+}
+
+.skeleton-th {
+  height: 14px;
+}
+
+.skeleton-table-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1.5fr 0.8fr 1.2fr;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.skeleton-td {
+  height: 12px;
+}
+
+@media (max-width: 768px) {
+  .skeleton-stats-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .skeleton-ranking-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .skeleton-table-header,
+  .skeleton-table-row {
+    grid-template-columns: 1.5fr 1fr 0.8fr 1fr 0.6fr 1fr;
+    gap: 8px;
+  }
+}
+
+/* ============================================
+   TOAST - 升級版
+   ============================================ */
+
+.toast {
+  position: fixed;
+  z-index: 30;
+  right: 24px;
+  bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 280px;
+  max-width: 420px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  box-shadow: 0 12px 40px var(--shadow-color);
+  animation: toast-slide-in 0.3s ease-out;
+  backdrop-filter: blur(10px);
+}
+
+@keyframes toast-slide-in {
+  0% { transform: translateX(100px); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes toast-slide-out {
+  0% { transform: translateX(0); opacity: 1; }
+  100% { transform: translateX(100px); opacity: 0; }
+}
+
+.toast.toast-success {
+  border-left: 4px solid #2bc99a;
+}
+
+.toast.toast-success .toast-icon {
+  color: #2bc99a;
+}
+
+.toast.toast-warning {
+  border-left: 4px solid #f3a662;
+}
+
+.toast.toast-warning .toast-icon {
+  color: #f3a662;
+}
+
+.toast.toast-info {
+  border-left: 4px solid #64bff1;
+}
+
+.toast.toast-info .toast-icon {
+  color: #64bff1;
+}
+
+.toast .toast-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.toast .toast-message {
+  flex: 1;
+  line-height: 1.4;
+}
+
+.toast .toast-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px;
+  transition: 0.2s;
+  border-radius: 4px;
+}
+
+.toast .toast-close:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+/* ============================================
+   微交互動畫增強
+   ============================================ */
+
+/* 卡片懸浮效果 */
+.stat-card,
+.panel,
+.achievement-card,
+.pro-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.stat-card:hover,
+.panel:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px var(--shadow-color);
+  border-color: var(--border-light);
+}
+
+.achievement-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px var(--shadow-color);
+}
+
+.pro-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px var(--shadow-color);
+}
+
+/* 按鈕點擊反饋 */
+.primary-button,
+.secondary-button,
+.select-button,
+.claim-button,
+.calculate-btn {
+  transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.primary-button:active,
+.secondary-button:active,
+.select-button:active,
+.claim-button:active,
+.calculate-btn:active {
+  transform: scale(0.96);
+}
+
+/* 鏈接懸浮 */
+.text-button {
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.text-button:hover {
+  color: #7ae8c0;
+  transform: translateX(2px);
+}
+
+/* 圖標按鈕 */
+.icon-button {
+  transition: color 0.2s ease, transform 0.2s ease, background 0.2s ease;
+  border-radius: 8px;
+  padding: 6px;
+}
+
+.icon-button:hover {
+  background: var(--bg-hover);
+  transform: scale(1.05);
+}
+
+.icon-button:active {
+  transform: scale(0.92);
+}
+
+/* 表格行懸浮 */
+tbody tr {
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+tbody tr:hover {
+  background: var(--bg-hover);
+  transform: scale(1.002);
+}
+
+/* 輸入框聚焦 */
+input, select, textarea {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: #39cfa0;
+  box-shadow: 0 0 0 4px rgba(57, 207, 160, 0.08);
+}
+
+/* 日曆日期懸浮 */
+.calendar-day.clickable {
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.15s ease;
+}
+
+.calendar-day.clickable:hover {
+  border-color: var(--border-light);
+  background: var(--bg-hover);
+  transform: scale(1.02);
+}
+
+.calendar-day.clickable:active {
+  transform: scale(0.96);
+}
+
+/* 成就徽章懸浮 */
+.achievement-badge {
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.achievement-badge:hover {
+  transform: scale(1.15);
+}
+
+.achievement-badge.locked:hover {
+  opacity: 0.6;
+}
+
+/* R:R 數值動畫 */
+.price-cell {
+  transition: color 0.3s ease;
+}
+
+/* 加載狀態過渡 */
+.loading-screen {
+  animation: fade-in 0.3s ease;
+}
+
+@keyframes fade-in {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+/* 頁面切換過渡 */
+.page-content {
+  animation: fade-up 0.3s ease;
+}
+
+@keyframes fade-up {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* 模態框打開動畫 */
+.modal-backdrop {
+  animation: fade-in 0.2s ease;
+}
+
+.trade-modal {
+  animation: modal-scale 0.25s ease;
+}
+
+@keyframes modal-scale {
+  0% { transform: scale(0.92); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* 通知數字脈衝 */
+.nav-achievement-badge {
+  transition: all 0.3s ease;
+}
+
+.nav-achievement-badge:hover {
+  transform: scale(1.08);
+}
+
+/* 滾動條美化（已存在，加強） */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-light);
+  border-radius: 3px;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
