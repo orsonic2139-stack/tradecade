@@ -3284,7 +3284,7 @@ input:focus, select:focus, textarea:focus {
    ============================================ */
 
 .brand-logo {
-  height: 100px;
+  height: 60px;
   width: auto;
   object-fit: contain;
   display: block;
