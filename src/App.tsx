@@ -33,7 +33,7 @@ import { useTheme } from './context/ThemeContext';
 
 import { SkeletonCard, SkeletonStats, SkeletonTable, SkeletonRanking } from './components/Skeleton';
 
-import GradientWaves from '@/components/Animations/GradientWaves/GradientWaves';
+import Ferrofluid from '@/components/Animations/Ferrofluid/Ferrofluid';
 
 // ============================================
 // TYPES
@@ -1267,51 +1267,50 @@ useEffect(() => {
       {mobileNav && <button className="mobile-overlay" onClick={() => setMobileNav(false)} aria-label="Close navigation" />}
 
       <main className="main-content">
-        <header className="topbar" style={{ position: 'relative', overflow: 'hidden' }}>
-  {/* 波浪背景 - 作為絕對定位的背景層 */}
+        <header className="topbar" style={{ 
+  position: 'relative', 
+  overflow: 'hidden',
+  height: '76px',
+  minHeight: '76px'
+}}>
+  {/* 鐵磁流體特效 - 背景層 */}
   <div style={{
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 0,  // ← 確保在底層
-    pointerEvents: 'none', // ← 讓鼠標事件穿透
+    inset: 0,
+    zIndex: 0,
+    pointerEvents: 'none',
+    width: '100%',
+    height: '100%'
   }}>
-    <GradientWaves
-      horizonColor="#48d9a9"
-      waveColor="#0d1117"
-      crestColor="#24d39a"
-      speed={0.6}
-      amplitude={2.75}
-      waveScale={0.7}
-      waveRatio={0.5}
-      swell={26}
-      turbulence={24.5}
-      tilt={1.1}
-      zoom={1.0}
-      height={5}
-      fogDepth={19}
-      detail="high"
-      brightness={1.0}
-      opacity={0.35}
+    <Ferrofluid
+      colors={["#48d9a9", "#24d39a", "#0d1117"]}
+      speed={0.3}
+      scale={1.1}
+      turbulence={1.2}
+      fluidity={0.08}
+      rimWidth={0.25}
+      sharpness={2.5}
+      shimmer={1.5}
+      glow={1.8}
+      flowDirection="down"
+      opacity={0.4}
       mouseInteraction={true}
-      parallaxStrength={0.5}
-      grain={false}
-      grainIntensity={0}
+      mouseStrength={0.8}
+      mouseRadius={0.35}
+      mouseDampening={0.15}
     />
   </div>
   
-  {/* Topbar 內容 - 在 z-index 上層 */}
+  {/* Topbar 內容 - 在上層 */}
   <div style={{ 
     position: 'relative',
-    zIndex: 1,  // ← 確保在波浪上方
+    zIndex: 1,
     display: 'flex', 
     alignItems: 'center', 
     justifyContent: 'space-between', 
     width: '100%',
     height: '100%',
-    padding: '0 42px',  // ← 恢復原有的 padding
+    padding: '0 42px',
   }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
       <button className="icon-button menu-button" onClick={() => setMobileNav(true)}><Menu size={20} /></button>
