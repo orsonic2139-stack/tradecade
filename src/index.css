@@ -3278,3 +3278,21 @@ input:focus, select:focus, textarea:focus {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
 }
+
+/* ============================================
+   BRAND LOGO
+   ============================================ */
+
+.brand-logo {
+  height: 32px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+
+/* 如果 logo 需要調整大小，可以修改 height */
+@media (max-width: 720px) {
+  .brand-logo {
+    height: 28px;
+  }
+}

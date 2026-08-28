@@ -1178,9 +1178,15 @@ useEffect(() => {
       <aside className={`sidebar ${mobileNav ? 'is-open' : ''}`}>
         <div className="sidebar-top">
           <div className="brand">
-            <div className="brand-mark"><Activity size={19} /></div>
-            <span>trade<span>cade</span></span>
-          </div>
+  <img 
+    src={theme === 'dark' 
+      ? 'https://dgsiastfgrssvsmosafu.supabase.co/storage/v1/object/public/logo/darkmode.png' 
+      : 'https://dgsiastfgrssvsmosafu.supabase.co/storage/v1/object/public/logo/lightmode.png'
+    } 
+    alt="Tradecade Logo" 
+    className="brand-logo"
+  />
+</div>
           <button className="icon-button mobile-close" onClick={() => setMobileNav(false)}><X size={18} /></button>
         </div>
 
