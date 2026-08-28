@@ -1283,22 +1283,22 @@ useEffect(() => {
     height: '100%'
   }}>
     <Ferrofluid
-      colors={["#48d9a9", "#24d39a", "#0d1117"]}
-      speed={0.3}
-      scale={1.1}
-      turbulence={1.2}
-      fluidity={0.08}
-      rimWidth={0.25}
-      sharpness={2.5}
-      shimmer={1.5}
-      glow={1.8}
-      flowDirection="down"
-      opacity={0.4}
-      mouseInteraction={true}
-      mouseStrength={0.8}
-      mouseRadius={0.35}
-      mouseDampening={0.15}
-    />
+  colors={["#68ff7c", "#68ff7c"]}
+  speed={0.3}
+  scale={1.1}
+  turbulence={1}
+  fluidity={0.05}
+  rimWidth={0.2}
+  sharpness={2.5}
+  shimmer={1.35}
+  glow={1.7}
+  flowDirection="right"
+  opacity={1}
+  mouseInteraction={true}
+  mouseStrength={0.6}
+  mouseRadius={0.3}
+  mouseDampening={0.15}
+/>
   </div>
   
   {/* Topbar 內容 - 在上層 */}
