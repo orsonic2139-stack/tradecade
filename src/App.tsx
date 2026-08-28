@@ -49,6 +49,22 @@ type AchievementDef = {
   monthlyRequirement?: (monthlyTrades: Trade[], settings?: UserSettings) => boolean; // ✅ 加入 settings?
 };
 
+type LotSizeCalculatorInputs = {
+  instrument: string;
+  openPrice: number | null;
+  stopLossPrice: number | null;
+  accountBalance: number;
+  riskPercent: number;
+  contractSize: number;
+};
+
+type LotSizeCalculatorResult = {
+  tradeSize: number;
+  moneyAtRisk: number;
+  riskAmount: number;
+  stopLossDistance: number;
+};
+
 type UserSettings = {
   initial_capital: number;
   account_balance?: number;
@@ -574,6 +590,7 @@ function App() {
   const [mobileNav, setMobileNav] = useState(false);
   const [toast, setToast] = useState('');
   const [claiming, setClaiming] = useState<string | null>(null);
+  const [showCalculator, setShowCalculator] = useState(false);
 
   // Load user settings
   useEffect(() => {
@@ -1159,33 +1176,52 @@ function App() {
         </div>
 
         <div className="sidebar-bottom">
-          <div className="pro-card" onClick={() => setShowSettings(true)} style={{ cursor: 'pointer' }}>
-            <div className="pro-icon">{stats ? LEVEL_CONFIG[stats.level - 1]?.icon || '📊' : '📊'}</div>
-            <div>
-              <strong>Level {stats?.level || 1}</strong>
-              <span className="capital-amount">${(settings.account_balance ?? settings.initial_capital).toLocaleString()}</span>
-            </div>
-            <ChevronDown size={15} />
-          </div>
-          {unclaimedCount > 0 && (
-            <div className="unclaimed-banner" onClick={() => setView('achievements')}>
-              <Gift size={14} />
-              <span>{unclaimedCount} achievement{unclaimedCount > 1 ? 's' : ''} ready to claim!</span>
-            </div>
-          )}
-          <button className="nav-item" onClick={() => setShowSettings(true)}>
-            <Settings size={18} />
-            <span>Settings</span>
-          </button>
-          <button className="profile" onClick={logout}>
-            <div className="avatar">{initials(email)}</div>
-            <div>
-              <strong>{email.split('@')[0]}</strong>
-              <span>Sign out</span>
-            </div>
-            <LogOut size={15} />
-          </button>
-        </div>
+  <div className="pro-card" onClick={() => setShowSettings(true)} style={{ cursor: 'pointer' }}>
+    <div className="pro-icon">{stats ? LEVEL_CONFIG[stats.level - 1]?.icon || '📊' : '📊'}</div>
+    <div>
+      <strong>Level {stats?.level || 1}</strong>
+      <span className="capital-amount">${(settings.account_balance ?? settings.initial_capital).toLocaleString()}</span>
+    </div>
+    <ChevronDown size={15} />
+  </div>
+  
+  {unclaimedCount > 0 && (
+    <div className="unclaimed-banner" onClick={() => setView('achievements')}>
+      <Gift size={14} />
+      <span>{unclaimedCount} achievement{unclaimedCount > 1 ? 's' : ''} ready to claim!</span>
+    </div>
+  )}
+
+  {/* ✅ Lot Size Calculator 入口 */}
+  <button 
+    className="nav-item" 
+    onClick={() => setShowCalculator(!showCalculator)}
+  >
+    <span style={{ fontSize: '18px' }}>📐</span>
+    <span>Lot Size Calculator</span>
+    <ChevronDown size={14} style={{ marginLeft: 'auto' }} />
+  </button>
+
+  {showCalculator && (
+    <div className="sidebar-calculator">
+      <LotSizeCalculator accountBalance={settings.account_balance ?? settings.initial_capital} />
+    </div>
+  )}
+
+  <button className="nav-item" onClick={() => setShowSettings(true)}>
+    <Settings size={18} />
+    <span>Settings</span>
+  </button>
+  
+  <button className="profile" onClick={logout}>
+    <div className="avatar">{initials(email)}</div>
+    <div>
+      <strong>{email.split('@')[0]}</strong>
+      <span>Sign out</span>
+    </div>
+    <LogOut size={15} />
+  </button>
+</div>
       </aside>
 
       {mobileNav && <button className="mobile-overlay" onClick={() => setMobileNav(false)} aria-label="Close navigation" />}
@@ -2132,6 +2168,209 @@ function AchievementsView({
         </div>
       )}
     </>
+  );
+}
+
+// ============================================
+// LOT SIZE CALCULATOR
+// ============================================
+
+function LotSizeCalculator({ accountBalance }: { accountBalance: number }) {
+  const [instrument, setInstrument] = useState('EURUSD');
+  const [openPrice, setOpenPrice] = useState<string>('');
+  const [stopLossPrice, setStopLossPrice] = useState<string>('');
+  const [riskPercent, setRiskPercent] = useState<string>('1');
+  const [result, setResult] = useState<LotSizeCalculatorResult | null>(null);
+  const [error, setError] = useState('');
+
+  const contractSize = 100000;
+
+  const calculate = () => {
+    setError('');
+    
+    const open = parseFloat(openPrice);
+    const sl = parseFloat(stopLossPrice);
+    const risk = parseFloat(riskPercent);
+    const balance = accountBalance;
+
+    if (!open || open <= 0) {
+      setError('Please enter a valid Open Price');
+      return;
+    }
+    if (!sl || sl <= 0) {
+      setError('Please enter a valid Stop Loss Price');
+      return;
+    }
+    if (sl === open) {
+      setError('Stop Loss cannot be equal to Entry Price');
+      return;
+    }
+    if (!risk || risk <= 0) {
+      setError('Please enter a valid Risk %');
+      return;
+    }
+    if (balance <= 0) {
+      setError('Account Balance is not available');
+      return;
+    }
+
+    // 計算停損距離（絕對值）
+    const slDistance = Math.abs(open - sl);
+    
+    // 計算風險金額
+    const riskAmount = balance * (risk / 100);
+    
+    // 計算 Trade Size (Lots)
+    // Trade Size = Risk Amount / (Stop Loss Distance × Contract Size)
+    const tradeSize = riskAmount / (slDistance * contractSize);
+    
+    // Money At Risk = Risk Amount
+    const moneyAtRisk = riskAmount;
+
+    setResult({
+      tradeSize: tradeSize,
+      moneyAtRisk: moneyAtRisk,
+      riskAmount: riskAmount,
+      stopLossDistance: slDistance,
+    });
+  };
+
+  // 預設按鈕
+  const presetRisks = [0.5, 1, 1.5, 2, 3];
+
+  return (
+    <div className="lot-size-calculator">
+      <div className="calculator-header">
+        <div className="calculator-icon">📐</div>
+        <div>
+          <h3>Lot Size Calculator</h3>
+          <span>Calculate position size based on risk</span>
+        </div>
+      </div>
+
+      <div className="calculator-grid">
+        <div className="calculator-field">
+          <label>Instrument (Pair)</label>
+          <select value={instrument} onChange={(e) => setInstrument(e.target.value)}>
+            <option value="EURUSD">EUR/USD</option>
+            <option value="GBPUSD">GBP/USD</option>
+            <option value="USDJPY">USD/JPY</option>
+            <option value="AUDUSD">AUD/USD</option>
+            <option value="USDCAD">USD/CAD</option>
+            <option value="NZDUSD">NZD/USD</option>
+            <option value="USDCHF">USD/CHF</option>
+            <option value="XAUUSD">XAU/USD (Gold)</option>
+            <option value="BTCUSD">BTC/USD</option>
+            <option value="ETHUSD">ETH/USD</option>
+            <option value="ES">S&P 500 (ES)</option>
+            <option value="NQ">Nasdaq (NQ)</option>
+            <option value="CL">Crude Oil (CL)</option>
+          </select>
+        </div>
+
+        <div className="calculator-field">
+          <label>Open Price (Entry)</label>
+          <input
+            type="number"
+            step="any"
+            value={openPrice}
+            onChange={(e) => setOpenPrice(e.target.value)}
+            placeholder="e.g. 1.1000"
+          />
+        </div>
+
+        <div className="calculator-field">
+          <label>Stop Loss Price</label>
+          <input
+            type="number"
+            step="any"
+            value={stopLossPrice}
+            onChange={(e) => setStopLossPrice(e.target.value)}
+            placeholder="e.g. 1.0950"
+          />
+        </div>
+
+        <div className="calculator-field">
+          <label>Account Balance</label>
+          <input
+            type="text"
+            value={`$${accountBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            disabled
+            className="balance-display"
+          />
+        </div>
+
+        <div className="calculator-field">
+          <label>Risk (% of Account)</label>
+          <div className="risk-input-group">
+            <input
+              type="number"
+              step="0.1"
+              value={riskPercent}
+              onChange={(e) => setRiskPercent(e.target.value)}
+              placeholder="1"
+            />
+            <span className="risk-percent-sign">%</span>
+          </div>
+          <div className="preset-risks">
+            {presetRisks.map((r) => (
+              <button
+                key={r}
+                className={`preset-btn ${parseFloat(riskPercent) === r ? 'active' : ''}`}
+                onClick={() => setRiskPercent(String(r))}
+              >
+                {r}%
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="calculator-field">
+          <label>Contract Size</label>
+          <input
+            type="text"
+            value="100,000"
+            disabled
+            className="balance-display"
+          />
+        </div>
+      </div>
+
+      {error && <div className="calculator-error">{error}</div>}
+
+      <button className="calculate-btn" onClick={calculate}>
+        <span>📊</span> Calculate
+      </button>
+
+      {result && (
+        <div className="calculator-result">
+          <div className="result-row">
+            <span className="result-label">Trade Size (Lots)</span>
+            <span className="result-value highlight">
+              {result.tradeSize.toFixed(2)} lots
+            </span>
+          </div>
+          <div className="result-row">
+            <span className="result-label">Money At Risk</span>
+            <span className={`result-value ${result.moneyAtRisk > 0 ? 'positive' : ''}`}>
+              ${result.moneyAtRisk.toFixed(2)}
+            </span>
+          </div>
+          <div className="result-row">
+            <span className="result-label">Stop Loss Distance</span>
+            <span className="result-value">
+              {result.stopLossDistance.toFixed(4)} pips
+            </span>
+          </div>
+          <div className="result-row">
+            <span className="result-label">Risk Amount</span>
+            <span className={`result-value ${result.riskAmount > 0 ? 'positive' : ''}`}>
+              ${result.riskAmount.toFixed(2)}
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
