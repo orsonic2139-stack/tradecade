@@ -8,8 +8,10 @@ import {
   Moon, Plus, Search, Settings, ShieldCheck, SlidersHorizontal, Sparkles,
   Target, TrendingUp, X, Zap, Upload, DollarSign, Award, Trophy, Star,
   Flame, Crown, Shield, Brain, TrendingDown, GitBranch, Medal, Gem,
-  Gift, CheckCircle, Lock, AlertCircle, Bell, ListChecks, Sun,
-  // ✅ 成就圖標（所有在 iconMap 中使用的）
+  Gift, CheckCircle, Lock, AlertCircle, Bell, ListChecks,
+  // ✅ 加入 Sun 圖標
+  Sun,
+  // ✅ 成就圖標
   BarChart,
   Calendar,
   Clock,
@@ -26,6 +28,9 @@ import {
   Ruler,
   Camera,
 } from 'lucide-react';
+
+// ✅ 加入 useTheme
+import { useTheme } from './context/ThemeContext';
 
 // ============================================
 // TYPES
