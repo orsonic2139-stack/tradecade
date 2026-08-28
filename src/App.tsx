@@ -29,10 +29,11 @@ import {
   Camera,
 } from 'lucide-react';
 
-// ✅ 加入 useTheme
 import { useTheme } from './context/ThemeContext';
-// ✅ 新增骨架屏導入
+
 import { SkeletonCard, SkeletonStats, SkeletonTable, SkeletonRanking } from './components/Skeleton';
+
+import GradientWaves from '@/components/Animations/GradientWaves/GradientWaves';
 
 // ============================================
 // TYPES
@@ -1265,21 +1266,58 @@ useEffect(() => {
       {mobileNav && <button className="mobile-overlay" onClick={() => setMobileNav(false)} aria-label="Close navigation" />}
 
       <main className="main-content">
-        <header className="topbar">
-          <button className="icon-button menu-button" onClick={() => setMobileNav(true)}><Menu size={20} /></button>
-          <div className="breadcrumb">
-            <span>Workspace</span>
-            <span>/</span>
-            <strong>{navItems.find((item) => item.id === view)?.label}</strong>
-          </div>
-          <div className="topbar-actions">
-  <button className="icon-button" onClick={toggleTheme}>
-    {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-  </button>
-  <button className="notification"><span /></button>
-  <div className="avatar small">{initials(email)}</div>
-</div>
-        </header>
+        <header className="topbar" style={{ position: 'relative', overflow: 'hidden' }}>
+  {/* 波浪背景 */}
+  <GradientWaves
+    horizonColor="#48d9a9"
+    waveColor="#0d1117"
+    crestColor="#24d39a"
+    speed={0.6}
+    amplitude={2.75}
+    waveScale={0.7}
+    waveRatio={0.5}
+    swell={26}
+    turbulence={24.5}
+    tilt={1.1}
+    zoom={1.0}
+    height={5}
+    fogDepth={19}
+    detail="high"
+    brightness={1.0}
+    opacity={0.35}
+    mouseInteraction={true}
+    parallaxStrength={0.5}
+    grain={false}
+    grainIntensity={0}
+  />
+  
+  {/* Topbar 內容 */}
+  <div style={{ 
+    position: 'relative', 
+    zIndex: 2, 
+    display: 'flex', 
+    alignItems: 'center', 
+    justifyContent: 'space-between', 
+    width: '100%',
+    height: '100%'
+  }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+      <button className="icon-button menu-button" onClick={() => setMobileNav(true)}><Menu size={20} /></button>
+      <div className="breadcrumb">
+        <span>Workspace</span>
+        <span>/</span>
+        <strong>{navItems.find((item) => item.id === view)?.label}</strong>
+      </div>
+    </div>
+    <div className="topbar-actions">
+      <button className="icon-button" onClick={toggleTheme}>
+        {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+      </button>
+      <button className="notification"><span /></button>
+      <div className="avatar small">{initials(email)}</div>
+    </div>
+  </div>
+</header>
 
         <div className="page-content">
           {view === 'overview' && (
