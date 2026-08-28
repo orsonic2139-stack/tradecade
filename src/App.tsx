@@ -1953,16 +1953,109 @@ function Analytics({ trades, settings, stats }: { trades: Trade[]; settings: Use
 }
 
 // ============================================
-// CALENDAR VIEW
+// CALENDAR VIEW (完整功能版)
 // ============================================
 
 function CalendarView({ trades }: { trades: Trade[] }) {
-  const byDate = useMemo(() => trades.reduce<Record<string, Trade[]>>((result, trade) => {
-    (result[trade.trade_date] ??= []).push(trade);
-    return result;
-  }, {}), [trades]);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedDayTrades, setSelectedDayTrades] = useState<Trade[]>([]);
 
-  const days = Array.from({ length: 30 }, (_, index) => index + 1);
+  // 獲取當前月份的天數
+  const getDaysInMonth = (year: number, month: number) => {
+    return new Date(year, month + 1, 0).getDate();
+  };
+
+  // 獲取月份第一天是星期幾 (0=Sunday, 1=Monday, ...)
+  const getFirstDayOfMonth = (year: number, month: number) => {
+    return new Date(year, month, 1).getDay();
+  };
+
+  // 切換月份
+  const prevMonth = () => {
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+    setSelectedDate(null);
+    setSelectedDayTrades([]);
+  };
+
+  const nextMonth = () => {
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+    setSelectedDate(null);
+    setSelectedDayTrades([]);
+  };
+
+  const goToToday = () => {
+    setCurrentDate(new Date());
+    setSelectedDate(null);
+    setSelectedDayTrades([]);
+  };
+
+  // 格式化日期為 YYYY-MM-DD
+  const formatDate = (year: number, month: number, day: number) => {
+    return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  };
+
+  // 點擊日期
+  const handleDateClick = (dateStr: string) => {
+    const dayTrades = trades.filter(t => t.trade_date === dateStr);
+    if (dayTrades.length > 0) {
+      setSelectedDate(dateStr);
+      setSelectedDayTrades(dayTrades);
+    } else {
+      setSelectedDate(null);
+      setSelectedDayTrades([]);
+    }
+  };
+
+  // 按交易日期分組
+  const byDate = useMemo(() => {
+    return trades.reduce<Record<string, Trade[]>>((result, trade) => {
+      (result[trade.trade_date] ??= []).push(trade);
+      return result;
+    }, {});
+  }, [trades]);
+
+  // 檢查某天是否有交易
+  const hasTrades = (dateStr: string) => {
+    return byDate[dateStr] && byDate[dateStr].length > 0;
+  };
+
+  // 獲取某天的 P&L
+  const getDayPnL = (dateStr: string) => {
+    if (!byDate[dateStr]) return 0;
+    return byDate[dateStr].reduce((sum, trade) => sum + trade.pnl, 0);
+  };
+
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+  const daysInMonth = getDaysInMonth(year, month);
+  const firstDay = getFirstDayOfMonth(year, month);
+  const today = new Date();
+  const todayStr = formatDate(today.getFullYear(), today.getMonth(), today.getDate());
+
+  // 月份名稱
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  // 統計當月數據
+  const monthlyPnL = trades
+    .filter(t => {
+      const d = new Date(t.trade_date);
+      return d.getMonth() === month && d.getFullYear() === year;
+    })
+    .reduce((sum, t) => sum + t.pnl, 0);
+
+  const monthlyTrades = trades.filter(t => {
+    const d = new Date(t.trade_date);
+    return d.getMonth() === month && d.getFullYear() === year;
+  }).length;
+
+  const monthlyWins = trades.filter(t => {
+    const d = new Date(t.trade_date);
+    return d.getMonth() === month && d.getFullYear() === year && t.pnl > 0;
+  }).length;
+
+  const monthlyWinRate = monthlyTrades > 0 ? (monthlyWins / monthlyTrades * 100) : 0;
 
   return (
     <>
@@ -1970,31 +2063,125 @@ function CalendarView({ trades }: { trades: Trade[] }) {
         eyebrow="CONSISTENCY"
         title="Trading calendar"
         description="See your rhythm, one session at a time."
-        action={<button className="select-button">June 2024 <ChevronDown size={14} /></button>}
+        action={
+          <div className="calendar-actions">
+            <button className="select-button" onClick={goToToday}>
+              Today
+            </button>
+          </div>
+        }
       />
-      <section className="panel calendar-panel">
-        <div className="calendar-weekdays">
-          {['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map((day) => <span key={day}>{day}</span>)}
+
+      {/* 月份統計 */}
+      <div className="calendar-stats">
+        <div className="calendar-stat">
+          <span>Month P&L</span>
+          <strong className={monthlyPnL >= 0 ? 'positive-text' : 'negative-text'}>
+            {money(monthlyPnL)}
+          </strong>
         </div>
+        <div className="calendar-stat">
+          <span>Trades</span>
+          <strong>{monthlyTrades}</strong>
+        </div>
+        <div className="calendar-stat">
+          <span>Win Rate</span>
+          <strong>{monthlyWinRate.toFixed(1)}%</strong>
+        </div>
+        <div className="calendar-stat">
+          <span>Wins / Losses</span>
+          <strong>{monthlyWins} / {monthlyTrades - monthlyWins}</strong>
+        </div>
+      </div>
+
+      <section className="panel calendar-panel">
+        {/* 月份導航 */}
+        <div className="calendar-nav">
+          <button className="calendar-nav-btn" onClick={prevMonth}>
+            ‹
+          </button>
+          <span className="calendar-nav-title">
+            {monthNames[month]} {year}
+          </span>
+          <button className="calendar-nav-btn" onClick={nextMonth}>
+            ›
+          </button>
+        </div>
+
+        {/* 星期標題 */}
+        <div className="calendar-weekdays">
+          {weekDays.map((day) => (
+            <span key={day}>{day}</span>
+          ))}
+        </div>
+
+        {/* 日期格線 */}
         <div className="calendar-grid">
-          {days.map((day) => {
-            const date = `2024-06-${String(day).padStart(2, '0')}`;
-            const dayTrades = byDate[date] ?? [];
-            const pnl = dayTrades.reduce((sum, trade) => sum + trade.pnl, 0);
+          {/* 空白填充 */}
+          {Array.from({ length: firstDay }).map((_, i) => (
+            <div className="calendar-day empty" key={`empty-${i}`} />
+          ))}
+
+          {/* 日期 */}
+          {Array.from({ length: daysInMonth }).map((_, index) => {
+            const day = index + 1;
+            const dateStr = formatDate(year, month, day);
+            const dayHasTrades = hasTrades(dateStr);
+            const dayPnL = dayHasTrades ? getDayPnL(dateStr) : 0;
+            const isToday = dateStr === todayStr;
+            const isSelected = dateStr === selectedDate;
+            const dayTrades = byDate[dateStr] || [];
+
             return (
-              <div className={`calendar-day ${dayTrades.length ? pnl >= 0 ? 'positive' : 'negative' : ''}`} key={day}>
-                <span>{day}</span>
-                {dayTrades.length > 0 && (
+              <div
+                key={day}
+                className={`calendar-day 
+                  ${dayHasTrades ? dayPnL >= 0 ? 'positive' : 'negative' : ''} 
+                  ${isToday ? 'today' : ''} 
+                  ${isSelected ? 'selected' : ''}
+                  ${dayHasTrades ? 'clickable' : ''}
+                `}
+                onClick={() => dayHasTrades && handleDateClick(dateStr)}
+              >
+                <span className="calendar-day-number">{day}</span>
+                {dayHasTrades && (
                   <>
-                    <strong>{money(pnl)}</strong>
-                    <small>{dayTrades.length} {dayTrades.length === 1 ? 'trade' : 'trades'}</small>
+                    <strong className={dayPnL >= 0 ? 'positive-text' : 'negative-text'}>
+                      {money(dayPnL)}
+                    </strong>
+                    <small>{dayTrades.length} trade{dayTrades.length > 1 ? 's' : ''}</small>
                   </>
                 )}
+                {isToday && <span className="today-dot" />}
               </div>
             );
           })}
         </div>
       </section>
+
+      {/* 選中日期的交易詳情 */}
+      {selectedDate && selectedDayTrades.length > 0 && (
+        <section className="panel calendar-detail-panel">
+          <div className="panel-heading">
+            <div>
+              <h3>📅 {new Date(selectedDate).toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+              })}</h3>
+              <span>{selectedDayTrades.length} trades on this day</span>
+            </div>
+            <button className="text-button" onClick={() => {
+              setSelectedDate(null);
+              setSelectedDayTrades([]);
+            }}>
+              Close ✕
+            </button>
+          </div>
+          <TradeTable trades={selectedDayTrades} compact />
+        </section>
+      )}
     </>
   );
 }
