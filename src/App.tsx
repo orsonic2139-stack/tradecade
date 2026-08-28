@@ -8,7 +8,7 @@ import {
   Moon, Plus, Search, Settings, ShieldCheck, SlidersHorizontal, Sparkles,
   Target, TrendingUp, X, Zap, Upload, DollarSign, Award, Trophy, Star,
   Flame, Crown, Shield, Brain, TrendingDown, GitBranch, Medal, Gem,
-  Gift, CheckCircle, Lock, AlertCircle, Bell, ListChecks,
+  Gift, CheckCircle, Lock, AlertCircle, Bell, ListChecks, Sun,
   // ✅ 成就圖標（所有在 iconMap 中使用的）
   BarChart,
   Calendar,
@@ -593,6 +593,7 @@ const calculateRR = (trade: Trade): string => {
 // ============================================
 
 function App() {
+  const { theme, toggleTheme } = useTheme();
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [trades, setTrades] = useState<Trade[]>([]);
@@ -1251,10 +1252,12 @@ function App() {
             <strong>{navItems.find((item) => item.id === view)?.label}</strong>
           </div>
           <div className="topbar-actions">
-            <button className="icon-button"><Moon size={18} /></button>
-            <button className="notification"><span /></button>
-            <div className="avatar small">{initials(email)}</div>
-          </div>
+  <button className="icon-button" onClick={toggleTheme}>
+    {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+  </button>
+  <button className="notification"><span /></button>
+  <div className="avatar small">{initials(email)}</div>
+</div>
         </header>
 
         <div className="page-content">
