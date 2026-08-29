@@ -264,74 +264,72 @@ export default function DynamicChart({ data, height = 190, initialBalance = 1000
     }
 
     function updateTooltip(index: number) {
-      const containerRect = container.getBoundingClientRect();
-      const dpr = 1.5;
-      const pad = { top: 20, bottom: 20, left: 55, right: 16 };
-      const chartW = (containerRect.width * dpr) - pad.left - pad.right;
+  const containerRect = container.getBoundingClientRect();
+  const dpr = 1.5;
+  const pad = { top: 20, bottom: 20, left: 55, right: 16 };
+  const chartW = (containerRect.width * dpr) - pad.left - pad.right;
 
-      if (index < 0 || index >= chartData.length) {
-        tooltip.classList.remove('visible');
-        return;
-      }
+  if (index < 0 || index >= chartData.length) {
+    tooltip.classList.remove('visible');
+    return;
+  }
 
-      const data = chartData[index];
-      const pnl = data.pnl;
-      const x = pad.left + (index / (chartData.length - 1)) * chartW;
-      const pixelX = x / dpr + containerRect.left;
+  const data = chartData[index];
+  const pnl = data.pnl;
+  const x = pad.left + (index / (chartData.length - 1)) * chartW;
+  const pixelX = x / dpr + containerRect.left;
 
-      // 更新 tooltip 內容
-      const dateEl = tooltip.querySelector('.date');
-      if (dateEl) dateEl.textContent = data.date;
+  // 更新 tooltip 內容（保持不變）
+  const dateEl = tooltip.querySelector('.date');
+  if (dateEl) dateEl.textContent = data.date;
 
-      const valueEl = tooltip.querySelector('.value');
-      if (valueEl) {
-        valueEl.textContent = (pnl >= 0 ? '+' : '-') + '$' + Math.abs(pnl).toLocaleString();
-        valueEl.className = 'value ' + (pnl >= 0 ? 'green' : 'red');
-      }
+  const valueEl = tooltip.querySelector('.value');
+  if (valueEl) {
+    valueEl.textContent = (pnl >= 0 ? '+' : '-') + '$' + Math.abs(pnl).toLocaleString();
+    valueEl.className = 'value ' + (pnl >= 0 ? 'green' : 'red');
+  }
 
-      const pnlEl = tooltip.querySelector('.pnl-value');
-      if (pnlEl) {
-        pnlEl.textContent = (pnl >= 0 ? '+' : '-') + '$' + Math.abs(pnl).toLocaleString();
-        pnlEl.className = 'pnl-value ' + (pnl >= 0 ? 'green' : 'red');
-      }
+  const pnlEl = tooltip.querySelector('.pnl-value');
+  if (pnlEl) {
+    pnlEl.textContent = (pnl >= 0 ? '+' : '-') + '$' + Math.abs(pnl).toLocaleString();
+    pnlEl.className = 'pnl-value ' + (pnl >= 0 ? 'green' : 'red');
+  }
 
-      const tradesEl = tooltip.querySelector('.trades-value');
-      if (tradesEl) tradesEl.textContent = String(data.trades);
+  const tradesEl = tooltip.querySelector('.trades-value');
+  if (tradesEl) tradesEl.textContent = String(data.trades);
 
-      // 定位 tooltip - 保持在卡片內部
-      const tooltipW = tooltip.offsetWidth || 200;
-      const tooltipH = tooltip.offsetHeight || 80;
-      
-      // 計算在卡片內的位置
-      const cardLeft = containerRect.left;
-      const cardRight = containerRect.right;
-      const cardTop = containerRect.top;
-      const cardBottom = containerRect.bottom;
-      
-      let left = pixelX + 12;
-      let top = cardTop + 12;
-      
-      // 確保不超出卡片右邊界
-      if (left + tooltipW > cardRight - 8) {
-        left = pixelX - tooltipW - 12;
-      }
-      // 確保不超出卡片左邊界
-      if (left < cardLeft + 8) {
-        left = cardLeft + 8;
-      }
-      // 確保不超出卡片下邊界
-      if (top + tooltipH > cardBottom - 8) {
-        top = cardBottom - tooltipH - 8;
-      }
-      // 確保不超出卡片上邊界
-      if (top < cardTop + 8) {
-        top = cardTop + 8;
-      }
+  // ===== 修改定位邏輯 =====
+  const tooltipW = tooltip.offsetWidth || 200;
+  const tooltipH = tooltip.offsetHeight || 80;
+  
+  // 數據點的 Y 位置（在卡片內）
+  const pointY = containerRect.top + 20; // 靠近卡片頂部
+  
+  // 計算 tooltip 位置 - 保持在 Performance overview 卡片內
+  let left = pixelX + 12;
+  let top = pointY + 10;
+  
+  // 確保不超出卡片右邊界
+  if (left + tooltipW > containerRect.right - 12) {
+    left = pixelX - tooltipW - 12;
+  }
+  // 確保不超出卡片左邊界
+  if (left < containerRect.left + 12) {
+    left = containerRect.left + 12;
+  }
+  // 確保不超出卡片下邊界
+  if (top + tooltipH > containerRect.bottom - 12) {
+    top = containerRect.bottom - tooltipH - 12;
+  }
+  // 確保不超出卡片上邊界
+  if (top < containerRect.top + 12) {
+    top = containerRect.top + 12;
+  }
 
-      tooltip.style.left = left + 'px';
-      tooltip.style.top = top + 'px';
-      tooltip.classList.add('visible');
-    }
+  tooltip.style.left = left + 'px';
+  tooltip.style.top = top + 'px';
+  tooltip.classList.add('visible');
+}
 
     const onMouseMove = (e: MouseEvent) => {
       const pos = getMousePos(e);
