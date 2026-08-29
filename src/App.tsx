@@ -1348,15 +1348,14 @@ useEffect(() => {
     </div>
   </div>
 
-  {/* ✅ 中間：StrokeText 文字動畫 - 靠右側 */}
+  {/* ✅ StrokeText 獨立放在右邊區塊左側 */}
   <div style={{
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'flex-end',
-    flex: 1,
-    padding: '0 16px',
     height: '48px',
     overflow: 'hidden',
+    marginLeft: 'auto',
+    marginRight: '12px',
   }}>
     <StrokeText
       text="Tradecade"
@@ -1366,7 +1365,7 @@ useEffect(() => {
       drawDuration={3}
       fillDelay={0.1}
       stagger={0.1}
-      fontSize={42}
+      fontSize={38}
       fontWeight={800}
       letterSpacing={-4}
       trigger="mount"
