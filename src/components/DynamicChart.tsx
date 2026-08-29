@@ -74,7 +74,7 @@ export default function DynamicChart({ data, height = 190, initialBalance = 1000
     function draw() {
       const w = width;
       const h = height;
-      const pad = { top: 20, bottom: 20, left: 50, right: 16 };
+      const pad = { top: 20, bottom: 20, left: 55, right: 16 };
       const chartW = w - pad.left - pad.right;
       const chartH = h - pad.top - pad.bottom;
 
@@ -87,13 +87,12 @@ export default function DynamicChart({ data, height = 190, initialBalance = 1000
 
       const min = Math.min(...values, initialBalance);
       const max = Math.max(...values, initialBalance);
-      const range = max - min || 1;
-
-      // 計算 Y 軸刻度（0, 1k, 2k, 3k...）
-      const maxVal = Math.max(Math.abs(min - initialBalance), Math.abs(max - initialBalance));
-      const step = Math.ceil(maxVal / 3000) * 1000; // 以 1000 為單位
-      const yMin = Math.floor(min / step) * step;
-      const yMax = Math.ceil(max / step) * step;
+      
+      // 計算 Y 軸範圍：上下各保留 30% 的空間
+      const range = max - min;
+      const padding = range * 0.3 || 500;
+      const yMin = Math.floor((min - padding) / 1000) * 1000;
+      const yMax = Math.ceil((max + padding) / 1000) * 1000;
       const yRange = yMax - yMin || 1;
 
       const normalized = values.map(v => (v - yMin) / yRange);
@@ -202,14 +201,16 @@ export default function DynamicChart({ data, height = 190, initialBalance = 1000
         }
       });
 
-      // Y軸標籤 - 以 1k 為單位
+      // Y軸標籤 - 以 1k 為單位，保留上下空間
       ctx.fillStyle = 'rgba(255,255,255,0.35)';
-      ctx.font = '11px monospace';
+      ctx.font = '10px monospace';
       ctx.textAlign = 'right';
       
-      const numSteps = Math.ceil((yMax - yMin) / step);
-      for (let i = 0; i <= numSteps; i++) {
-        const val = yMin + i * step;
+      const step = 1000;
+      const startVal = Math.floor(yMin / step) * step;
+      const endVal = Math.ceil(yMax / step) * step;
+      
+      for (let val = startVal; val <= endVal; val += step) {
         const pos = (val - yMin) / yRange;
         const y = pad.top + (1 - pos) * chartH;
         if (y >= pad.top - 5 && y <= pad.top + chartH + 5) {
@@ -243,15 +244,14 @@ export default function DynamicChart({ data, height = 190, initialBalance = 1000
     function findNearestPoint(mouseX: number) {
       const rect = container.getBoundingClientRect();
       const dpr = 1.5;
-      const pad = { top: 20, bottom: 20, left: 50, right: 16 };
+      const pad = { top: 20, bottom: 20, left: 55, right: 16 };
       const chartW = (rect.width * dpr) - pad.left - pad.right;
-      const values = chartData.map(d => d.pnl);
 
       let minDist = Infinity;
       let nearest = -1;
 
-      for (let i = 0; i < values.length; i++) {
-        const x = pad.left + (i / (values.length - 1)) * chartW;
+      for (let i = 0; i < chartData.length; i++) {
+        const x = pad.left + (i / (chartData.length - 1)) * chartW;
         const dist = Math.abs(mouseX - x);
         if (dist < minDist) {
           minDist = dist;
@@ -264,10 +264,10 @@ export default function DynamicChart({ data, height = 190, initialBalance = 1000
     }
 
     function updateTooltip(index: number) {
-      const rect = container.getBoundingClientRect();
+      const containerRect = container.getBoundingClientRect();
       const dpr = 1.5;
-      const pad = { top: 20, bottom: 20, left: 50, right: 16 };
-      const chartW = (rect.width * dpr) - pad.left - pad.right;
+      const pad = { top: 20, bottom: 20, left: 55, right: 16 };
+      const chartW = (containerRect.width * dpr) - pad.left - pad.right;
 
       if (index < 0 || index >= chartData.length) {
         tooltip.classList.remove('visible');
@@ -277,8 +277,7 @@ export default function DynamicChart({ data, height = 190, initialBalance = 1000
       const data = chartData[index];
       const pnl = data.pnl;
       const x = pad.left + (index / (chartData.length - 1)) * chartW;
-      const pixelX = x / dpr + rect.left;
-      const pixelY = rect.top + 10;
+      const pixelX = x / dpr + containerRect.left;
 
       // 更新 tooltip 內容
       const dateEl = tooltip.querySelector('.date');
@@ -299,24 +298,34 @@ export default function DynamicChart({ data, height = 190, initialBalance = 1000
       const tradesEl = tooltip.querySelector('.trades-value');
       if (tradesEl) tradesEl.textContent = String(data.trades);
 
-      // 定位 tooltip - 在點的右上方
+      // 定位 tooltip - 保持在卡片內部
       const tooltipW = tooltip.offsetWidth || 200;
       const tooltipH = tooltip.offsetHeight || 80;
       
-      let left = pixelX + 16; // 點的左側 + 16px 偏移
-      let top = pixelY - tooltipH / 2; // 垂直居中對齊點
+      // 計算在卡片內的位置
+      const cardLeft = containerRect.left;
+      const cardRight = containerRect.right;
+      const cardTop = containerRect.top;
+      const cardBottom = containerRect.bottom;
       
-      // 防止超出右邊界
-      if (left + tooltipW > window.innerWidth - 10) {
-        left = pixelX - tooltipW - 16;
+      let left = pixelX + 12;
+      let top = cardTop + 12;
+      
+      // 確保不超出卡片右邊界
+      if (left + tooltipW > cardRight - 8) {
+        left = pixelX - tooltipW - 12;
       }
-      // 防止超出左邊界
-      if (left < 10) left = 10;
-      // 防止超出上邊界
-      if (top < 10) top = 10;
-      // 防止超出下邊界
-      if (top + tooltipH > window.innerHeight - 10) {
-        top = window.innerHeight - tooltipH - 10;
+      // 確保不超出卡片左邊界
+      if (left < cardLeft + 8) {
+        left = cardLeft + 8;
+      }
+      // 確保不超出卡片下邊界
+      if (top + tooltipH > cardBottom - 8) {
+        top = cardBottom - tooltipH - 8;
+      }
+      // 確保不超出卡片上邊界
+      if (top < cardTop + 8) {
+        top = cardTop + 8;
       }
 
       tooltip.style.left = left + 'px';
