@@ -1309,17 +1309,21 @@ useEffect(() => {
   alignItems: 'center', 
   justifyContent: 'space-between', 
   width: '100%',
-  height: '48px',                    // ← 改為固定高度
-  minHeight: '48px',                 // ← 新增
-  padding: '0 42px',
-  margin: '4px 12px',                // ← 新增
-  background: 'rgba(13, 17, 23, 0.5)',  // ← 新增
-  backdropFilter: 'blur(12px)',      // ← 新增
-  borderRadius: '16px',              // ← 新增
-  border: '1px solid rgba(255, 255, 255, 0.06)',  // ← 新增
-  boxShadow: '0 4px 30px rgba(0, 0, 0, 0.2)',     // ← 新增
+  padding: '0 20px',
 }}>
-  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+  {/* 左邊區塊 */}
+  <div style={{ 
+    display: 'flex', 
+    alignItems: 'center', 
+    gap: '16px',
+    background: 'rgba(13, 17, 23, 0.5)',
+    backdropFilter: 'blur(12px)',
+    borderRadius: '16px',
+    border: '1px solid rgba(255, 255, 255, 0.06)',
+    boxShadow: '0 4px 30px rgba(0, 0, 0, 0.2)',
+    padding: '0 20px',
+    height: '48px',
+  }}>
     <button className="icon-button menu-button" onClick={() => setMobileNav(true)}><Menu size={20} /></button>
     <div className="breadcrumb">
       <span>Workspace</span>
@@ -1327,6 +1331,27 @@ useEffect(() => {
       <strong>{navItems.find((item) => item.id === view)?.label}</strong>
     </div>
   </div>
+
+  {/* 右邊區塊 */}
+  <div className="topbar-actions" style={{
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    background: 'rgba(13, 17, 23, 0.5)',
+    backdropFilter: 'blur(12px)',
+    borderRadius: '16px',
+    border: '1px solid rgba(255, 255, 255, 0.06)',
+    boxShadow: '0 4px 30px rgba(0, 0, 0, 0.2)',
+    padding: '0 16px',
+    height: '48px',
+  }}>
+    <button className="icon-button" onClick={toggleTheme}>
+      {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+    </button>
+    <button className="notification"><span /></button>
+    <div className="avatar small">{initials(email)}</div>
+  </div>
+</div>
   <div className="topbar-actions">
     <button className="icon-button" onClick={toggleTheme}>
       {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
