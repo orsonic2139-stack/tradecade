@@ -1302,7 +1302,7 @@ useEffect(() => {
   </div>
   
   {/* Topbar 內容 - 在上層 */}
-  <div style={{ 
+<div style={{ 
   position: 'relative',
   zIndex: 1,
   display: 'flex', 
@@ -1345,14 +1345,6 @@ useEffect(() => {
     padding: '0 16px',
     height: '48px',
   }}>
-    <button className="icon-button" onClick={toggleTheme}>
-      {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-    </button>
-    <button className="notification"><span /></button>
-    <div className="avatar small">{initials(email)}</div>
-  </div>
-</div>
-  <div className="topbar-actions">
     <button className="icon-button" onClick={toggleTheme}>
       {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
     </button>
