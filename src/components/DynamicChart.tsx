@@ -291,18 +291,18 @@ export default function DynamicChart({ data, height = 190, initialBalance = 1000
   const tradesEl = tooltip.querySelector('.trades-value');
   if (tradesEl) tradesEl.textContent = String(data.trades);
 
-  // ===== 計算數據點在頁面上的位置 =====
-  const rect = container.getBoundingClientRect();
+  // ===== 使用 canvas 的 getBoundingClientRect 計算位置 =====
+  const canvasRect = canvas.getBoundingClientRect();
   const dpr = 1.5;
   const pad = { top: 20, bottom: 20, left: 55, right: 16 };
-  const chartW = (rect.width * dpr) - pad.left - pad.right;
-  const chartH = (rect.height * dpr) - pad.top - pad.bottom;
+  const chartW = (canvasRect.width * dpr) - pad.left - pad.right;
+  const chartH = (canvasRect.height * dpr) - pad.top - pad.bottom;
   
   // X 位置
   const x = pad.left + (index / (chartData.length - 1)) * chartW;
-  const pixelX = x / dpr + rect.left;
+  const pixelX = x / dpr + canvasRect.left;
   
-  // Y 位置 - 使用 canvas 的實際像素座標換算
+  // Y 位置
   let cumulative = initialBalance;
   const equityValues = chartData.map(d => {
     cumulative += d.pnl;
@@ -317,12 +317,10 @@ export default function DynamicChart({ data, height = 190, initialBalance = 1000
   const yRange = yMax - yMin || 1;
   
   const normalized = (equityValues[index] - yMin) / yRange;
-  
-  // 修正：使用 canvas 繪製時的實際 Y 座標
-  const canvasY = pad.top + (1 - normalized) * chartH; // 這是 canvas 內的像素座標
-  const pixelY = rect.top + (canvasY / dpr); // 轉換為頁面像素
+  const canvasY = pad.top + (1 - normalized) * chartH;
+  const pixelY = canvasRect.top + (canvasY / dpr);
 
-  // ===== 定位 tooltip 在數據點上方 =====
+  // ===== 定位 tooltip =====
   const tooltipW = tooltip.offsetWidth || 200;
   const tooltipH = tooltip.offsetHeight || 80;
   
