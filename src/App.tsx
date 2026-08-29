@@ -1348,32 +1348,32 @@ useEffect(() => {
     </div>
   </div>
 
-  {/* ✅ 中間：StrokeText 文字動畫 */}
+  {/* ✅ 中間：StrokeText 文字動畫 - 靠右側 */}
   <div style={{
-    flex: 1,
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center',
-    padding: '0 20px',
+    justifyContent: 'flex-end',
+    flex: 1,
+    padding: '0 16px',
     height: '48px',
     overflow: 'hidden',
   }}>
     <StrokeText
-  text="Tradecade"
-  strokeColor="#77ffb8"
-  fillColor="#ffffff"
-  strokeWidth={1.1}
-  drawDuration={3}
-  fillDelay={0.1}
-  stagger={0.1}
-  fontSize={52}
-  fontWeight={800}
-  letterSpacing={-4}
-  trigger="mount"
-  fillMode="fade"
-  ease="sine.inOut"
-  reverse={false}
-/>
+      text="Tradecade"
+      strokeColor="#77ffb8"
+      fillColor="#ffffff"
+      strokeWidth={1.1}
+      drawDuration={3}
+      fillDelay={0.1}
+      stagger={0.1}
+      fontSize={42}
+      fontWeight={800}
+      letterSpacing={-4}
+      trigger="mount"
+      fillMode="fade"
+      ease="sine.inOut"
+      reverse={false}
+    />
   </div>
 
   {/* 右邊區塊 */}
@@ -1388,6 +1388,7 @@ useEffect(() => {
     boxShadow: '0 4px 30px rgba(0, 0, 0, 0.2)',
     padding: '0 16px',
     height: '48px',
+    flexShrink: 0,
   }}>
     <button className="icon-button" onClick={toggleTheme}>
       {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
