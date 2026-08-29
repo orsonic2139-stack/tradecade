@@ -1701,14 +1701,15 @@ td strong {
 
 .level-badge {
   position: relative;
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #24d39a, #1a8f6a);
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 0 30px rgba(36, 211, 154, 0.15);
+  padding: 0;
 }
 
 .level-badge .level-icon {

@@ -1613,17 +1613,23 @@ function RankingDisplay({ stats, trades }: { stats: UserStats | null; trades: Tr
     <div className="ranking-panel">
       <div className="ranking-header">
         <div className="level-display">
-          <div className="level-badge">
+          <div className="level-badge" style={{ 
+  background: 'none', 
+  boxShadow: 'none',
+  width: 'auto',
+  height: 'auto',
+  borderRadius: '0',
+  padding: '0'
+}}>
   {typeof levelInfo.icon === 'string' && levelInfo.icon.startsWith('http') ? (
     <img 
       src={levelInfo.icon} 
       alt={levelInfo.title} 
-      className="level-badge-image"
+      style={{ width: '80px', height: '80px', objectFit: 'contain' }}
     />
   ) : (
-    <span className="level-icon">{levelInfo.icon}</span>
+    <span style={{ fontSize: '48px' }}>{levelInfo.icon}</span>
   )}
-  <span className="level-number">{stats.level}</span>
 </div>
           <div className="level-info">
             <h3>{levelInfo.title}</h3>
