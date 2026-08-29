@@ -134,12 +134,12 @@ type View = 'overview' | 'journal' | 'analytics' | 'calendar' | 'achievements';
 // ============================================
 
 const LEVEL_CONFIG = [
-  { level: 1, title: 'Rookie I', icon: '🥉', xpRequired: 0 },
-  { level: 2, title: 'Rookie II', icon: '🥉', xpRequired: 250 },
-  { level: 3, title: 'Rookie III', icon: '🥉', xpRequired: 600 },
-  { level: 4, title: 'Hunter I', icon: '🎯', xpRequired: 1100 },
-  { level: 5, title: 'Hunter II', icon: '🎯', xpRequired: 1750 },
-  { level: 6, title: 'Hunter III', icon: '🎯', xpRequired: 2600 },
+  { level: 1, title: 'Rookie I', icon: 'https://dgsiastfgrssvsmosafu.supabase.co/storage/v1/object/public/badge/rookie1.png', xpRequired: 0 },
+  { level: 2, title: 'Rookie II', icon: 'https://dgsiastfgrssvsmosafu.supabase.co/storage/v1/object/public/badge/rookie2.png', xpRequired: 250 },
+  { level: 3, title: 'Rookie III', icon: 'https://dgsiastfgrssvsmosafu.supabase.co/storage/v1/object/public/badge/rookie3.png', xpRequired: 600 },
+  { level: 4, title: 'Hunter I', icon: 'https://dgsiastfgrssvsmosafu.supabase.co/storage/v1/object/public/badge/hunter1.png', xpRequired: 1100 },
+  { level: 5, title: 'Hunter II', icon: 'https://dgsiastfgrssvsmosafu.supabase.co/storage/v1/object/public/badge/hunter2.png', xpRequired: 1750 },
+  { level: 6, title: 'Hunter III', icon: 'https://dgsiastfgrssvsmosafu.supabase.co/storage/v1/object/public/badge/hunter3.png', xpRequired: 2600 },
   { level: 7, title: 'Trader I', icon: '📊', xpRequired: 3700 },
   { level: 8, title: 'Trader II', icon: '📊', xpRequired: 5100 },
   { level: 9, title: 'Trader III', icon: '📊', xpRequired: 6900 },
@@ -1217,20 +1217,34 @@ useEffect(() => {
 
         <div className="sidebar-bottom">
   <div className="pro-card" onClick={() => setShowSettings(true)} style={{ cursor: 'pointer' }}>
-    <div className="pro-icon">{stats ? LEVEL_CONFIG[stats.level - 1]?.icon || '📊' : '📊'}</div>
-    <div>
-      <strong>Level {stats?.level || 1}</strong>
-      <span className="capital-amount">${(settings.account_balance ?? settings.initial_capital).toLocaleString()}</span>
-    </div>
-    <ChevronDown size={15} />
+  <div className="pro-icon">
+    {stats && LEVEL_CONFIG[stats.level - 1]?.icon ? (
+      typeof LEVEL_CONFIG[stats.level - 1].icon === 'string' && 
+      LEVEL_CONFIG[stats.level - 1].icon.startsWith('http') ? (
+        <img 
+          src={LEVEL_CONFIG[stats.level - 1].icon} 
+          alt="Level badge" 
+          className="pro-badge-image"
+          style={{ width: '32px', height: '32px', objectFit: 'contain' }}
+        />
+      ) : (
+        LEVEL_CONFIG[stats.level - 1].icon
+      )
+    ) : '📊'}
   </div>
-  
-  {unclaimedCount > 0 && (
-    <div className="unclaimed-banner" onClick={() => setView('achievements')}>
-      <Gift size={14} />
-      <span>{unclaimedCount} achievement{unclaimedCount > 1 ? 's' : ''} ready to claim!</span>
-    </div>
-  )}
+  <div>
+    <strong>Level {stats?.level || 1}</strong>
+    <span className="capital-amount">${(settings.account_balance ?? settings.initial_capital).toLocaleString()}</span>
+  </div>
+  <ChevronDown size={15} />
+</div>
+
+{unclaimedCount > 0 && (
+  <div className="unclaimed-banner" onClick={() => setView('achievements')}>
+    <Gift size={14} />
+    <span>{unclaimedCount} achievement{unclaimedCount > 1 ? 's' : ''} ready to claim!</span>
+  </div>
+)}
 
   {/* ✅ Lot Size Calculator 入口 */}
   <button 
@@ -1283,75 +1297,75 @@ useEffect(() => {
     height: '100%'
   }}>
     <Ferrofluid
-  colors={["#68ff7c", "#68ff7c"]}
-  speed={0.3}
-  scale={4}
-  turbulence={1}
-  fluidity={0.05}
-  rimWidth={0.2}
-  sharpness={2.5}
-  shimmer={1.35}
-  glow={1.7}
-  flowDirection="right"
-  opacity={1}
-  mouseInteraction={true}
-  mouseStrength={0.6}
-  mouseRadius={0.3}
-  mouseDampening={0.15}
-/>
+      colors={["#68ff7c", "#68ff7c"]}
+      speed={0.3}
+      scale={4}
+      turbulence={1}
+      fluidity={0.05}
+      rimWidth={0.2}
+      sharpness={2.5}
+      shimmer={1.35}
+      glow={1.7}
+      flowDirection="right"
+      opacity={1}
+      mouseInteraction={true}
+      mouseStrength={0.6}
+      mouseRadius={0.3}
+      mouseDampening={0.15}
+    />
   </div>
   
   {/* Topbar 內容 - 在上層 */}
-<div style={{ 
-  position: 'relative',
-  zIndex: 1,
-  display: 'flex', 
-  alignItems: 'center', 
-  justifyContent: 'space-between', 
-  width: '100%',
-  padding: '0 20px',
-}}>
-  {/* 左邊區塊 */}
   <div style={{ 
+    position: 'relative',
+    zIndex: 1,
     display: 'flex', 
     alignItems: 'center', 
-    gap: '16px',
-    background: 'rgba(13, 17, 23, 0.5)',
-    backdropFilter: 'blur(12px)',
-    borderRadius: '16px',
-    border: '1px solid rgba(255, 255, 255, 0.06)',
-    boxShadow: '0 4px 30px rgba(0, 0, 0, 0.2)',
+    justifyContent: 'space-between', 
+    width: '100%',
     padding: '0 20px',
-    height: '48px',
   }}>
-    <button className="icon-button menu-button" onClick={() => setMobileNav(true)}><Menu size={20} /></button>
-    <div className="breadcrumb">
-      <span>Workspace</span>
-      <span>/</span>
-      <strong>{navItems.find((item) => item.id === view)?.label}</strong>
+    {/* 左邊區塊 */}
+    <div style={{ 
+      display: 'flex', 
+      alignItems: 'center', 
+      gap: '16px',
+      background: 'rgba(13, 17, 23, 0.5)',
+      backdropFilter: 'blur(12px)',
+      borderRadius: '16px',
+      border: '1px solid rgba(255, 255, 255, 0.06)',
+      boxShadow: '0 4px 30px rgba(0, 0, 0, 0.2)',
+      padding: '0 20px',
+      height: '48px',
+    }}>
+      <button className="icon-button menu-button" onClick={() => setMobileNav(true)}><Menu size={20} /></button>
+      <div className="breadcrumb">
+        <span>Workspace</span>
+        <span>/</span>
+        <strong>{navItems.find((item) => item.id === view)?.label}</strong>
+      </div>
+    </div>
+
+    {/* 右邊區塊 */}
+    <div className="topbar-actions" style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: '12px',
+      background: 'rgba(13, 17, 23, 0.5)',
+      backdropFilter: 'blur(12px)',
+      borderRadius: '16px',
+      border: '1px solid rgba(255, 255, 255, 0.06)',
+      boxShadow: '0 4px 30px rgba(0, 0, 0, 0.2)',
+      padding: '0 16px',
+      height: '48px',
+    }}>
+      <button className="icon-button" onClick={toggleTheme}>
+        {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+      </button>
+      <button className="notification"><span /></button>
+      <div className="avatar small">{initials(email)}</div>
     </div>
   </div>
-
-  {/* 右邊區塊 */}
-  <div className="topbar-actions" style={{
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    background: 'rgba(13, 17, 23, 0.5)',
-    backdropFilter: 'blur(12px)',
-    borderRadius: '16px',
-    border: '1px solid rgba(255, 255, 255, 0.06)',
-    boxShadow: '0 4px 30px rgba(0, 0, 0, 0.2)',
-    padding: '0 16px',
-    height: '48px',
-  }}>
-    <button className="icon-button" onClick={toggleTheme}>
-      {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-    </button>
-    <button className="notification"><span /></button>
-    <div className="avatar small">{initials(email)}</div>
-  </div>
-</div>
 </header>
 
         <div className="page-content">
@@ -1600,9 +1614,17 @@ function RankingDisplay({ stats, trades }: { stats: UserStats | null; trades: Tr
       <div className="ranking-header">
         <div className="level-display">
           <div className="level-badge">
-            <span className="level-icon">{levelInfo.icon}</span>
-            <span className="level-number">{stats.level}</span>
-          </div>
+  {typeof levelInfo.icon === 'string' && levelInfo.icon.startsWith('http') ? (
+    <img 
+      src={levelInfo.icon} 
+      alt={levelInfo.title} 
+      className="level-badge-image"
+    />
+  ) : (
+    <span className="level-icon">{levelInfo.icon}</span>
+  )}
+  <span className="level-number">{stats.level}</span>
+</div>
           <div className="level-info">
             <h3>{levelInfo.title}</h3>
             <span className="level-xp">{stats.total_xp.toLocaleString()} XP</span>

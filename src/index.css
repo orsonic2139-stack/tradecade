@@ -3296,3 +3296,24 @@ input:focus, select:focus, textarea:focus {
     height: 28px;
   }
 }
+
+/* 段位徽章圖片 */
+.level-badge-image {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  display: block;
+}
+
+.pro-badge-image {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  display: block;
+}
+
+/* 如果徽章圖片在 ranking 中太大，可以調整 */
+.ranking-panel .level-badge-image {
+  width: 54px;
+  height: 54px;
+}
