@@ -3335,4 +3335,363 @@ input:focus, select:focus, textarea:focus {
   }
 }
 
-.tooltip.visible { opacity: 1 !important; }
+/* ============================================
+   TRADE CARDS (Journal)
+   ============================================ */
+
+.journal-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.trade-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 18px 20px;
+  transition: all 0.2s ease;
+}
+
+.trade-card:hover {
+  border-color: var(--border-light);
+  box-shadow: 0 4px 20px var(--shadow-color);
+}
+
+.trade-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.trade-card-pair {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pair-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #254942;
+  color: #e7f4ef;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+  font-family: 'DM Mono', monospace;
+}
+
+.pair-symbol {
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.pair-market {
+  color: var(--text-muted);
+  font-size: 11px;
+  background: var(--bg-input);
+  padding: 2px 10px;
+  border-radius: 4px;
+}
+
+.trade-card-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.direction-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: 'DM Mono', monospace;
+}
+
+.direction-badge.long {
+  color: #4bd8a9;
+  background: #183932;
+}
+
+.direction-badge.short {
+  color: #ee8a80;
+  background: #3a292c;
+}
+
+.setup-badge {
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+}
+
+.timeframe-badge {
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 10px;
+  color: var(--text-dim);
+  background: var(--bg-input);
+  font-family: 'DM Mono', monospace;
+}
+
+/* 截圖 */
+.trade-card-screenshot {
+  margin: 8px 0 10px 0;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  background: var(--bg-input);
+  max-height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.trade-card-screenshot img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  max-height: 160px;
+}
+
+.trade-card-screenshot .no-screenshot {
+  color: var(--text-dim);
+  font-size: 11px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.trade-card-screenshot .no-screenshot i {
+  opacity: 0.4;
+  font-size: 20px;
+}
+
+/* 價格行 */
+.trade-card-prices {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  flex-wrap: wrap;
+}
+
+.price-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.price-label {
+  color: var(--text-dim);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.price-value {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-family: 'DM Mono', monospace;
+  font-weight: 500;
+}
+
+.price-arrow {
+  color: var(--text-dim);
+  font-size: 14px;
+}
+
+.result-group {
+  margin-left: auto;
+}
+
+.result-value {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.result-value small {
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.rr-value {
+  color: #48d9a9;
+  font-weight: 600;
+}
+
+/* 筆記 + 標籤 + Label */
+.trade-card-meta {
+  padding: 10px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.meta-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.meta-label {
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 600;
+  min-width: 48px;
+}
+
+.meta-label i {
+  width: 16px;
+  margin-right: 2px;
+}
+
+.meta-value {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.tag-pill {
+  background: var(--bg-input);
+  color: var(--text-muted);
+  padding: 2px 10px;
+  border-radius: 4px;
+  font-size: 10px;
+  border: 1px solid var(--border-color);
+}
+
+.label-pill {
+  padding: 2px 12px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.label-pill.profit {
+  background: #183932;
+  color: #4bd8a9;
+}
+
+.label-pill.loss {
+  background: #3a292c;
+  color: #ee8a80;
+}
+
+.label-pill.neutral {
+  background: #1a1a2e;
+  color: var(--text-dim);
+}
+
+/* 操作按鈕 */
+.trade-card-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-color);
+}
+
+.edit-btn,
+.delete-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid var(--border-color);
+  background: var(--bg-input);
+  color: var(--text-muted);
+  transition: 0.2s;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.edit-btn i,
+.delete-btn i {
+  font-size: 12px;
+}
+
+.edit-btn:hover {
+  border-color: #48d9a9;
+  color: #48d9a9;
+  background: rgba(72, 217, 169, 0.06);
+}
+
+.delete-btn:hover {
+  border-color: #ee8077;
+  color: #ee8077;
+  background: rgba(238, 128, 119, 0.06);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .trade-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .trade-card-prices {
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .result-group {
+    margin-left: 0;
+    width: 100%;
+    justify-content: flex-end;
+  }
+  .trade-card-actions {
+    flex-direction: column;
+  }
+  .edit-btn,
+  .delete-btn {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .trade-card {
+    padding: 14px;
+  }
+  .trade-card-prices {
+    gap: 6px;
+  }
+  .price-group {
+    flex-wrap: wrap;
+  }
+  .price-label {
+    font-size: 9px;
+  }
+  .price-value {
+    font-size: 11px;
+  }
+}

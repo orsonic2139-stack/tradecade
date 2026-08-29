@@ -1927,12 +1927,141 @@ function useStats(trades: Trade[], settings: UserSettings) {
 }
 
 // ============================================
+// TRADE CARD
+// ============================================
+
+function TradeCard({ trade, onEdit, onDelete }: { trade: Trade; onEdit: () => void; onDelete: () => void }) {
+  const pnlColor = trade.pnl >= 0 ? 'positive-text' : 'negative-text';
+  const directionIcon = trade.side === 'Long' ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />;
+  const directionClass = trade.side.toLowerCase();
+  
+  // 判斷 Label
+  let labelText = 'Neutral';
+  let labelClass = 'neutral';
+  let labelIcon = 'fa-minus-circle';
+  if (trade.pnl > 0) {
+    labelText = 'Profit';
+    labelClass = 'profit';
+    labelIcon = 'fa-check-circle';
+  } else if (trade.pnl < 0) {
+    labelText = 'Loss';
+    labelClass = 'loss';
+    labelIcon = 'fa-times-circle';
+  }
+
+  return (
+    <div className="trade-card">
+      {/* 頂部：Pair + Direction + Setup */}
+      <div className="trade-card-header">
+        <div className="trade-card-pair">
+          <span className="pair-icon">{trade.symbol.slice(0, 1)}</span>
+          <span className="pair-symbol">{trade.symbol}</span>
+          <span className="pair-market">{trade.market}</span>
+        </div>
+        <div className="trade-card-badges">
+          <span className={`direction-badge ${directionClass}`}>
+            {directionIcon} {trade.side}
+          </span>
+          <span className="setup-badge">{trade.setup}</span>
+          <span className="timeframe-badge">{trade.timeframe}</span>
+        </div>
+      </div>
+
+      {/* 截圖 */}
+      <div className="trade-card-screenshot">
+        {trade.screenshot_url ? (
+          <img src={trade.screenshot_url} alt="Trade screenshot" />
+        ) : (
+          <div className="no-screenshot">
+            <i className="fas fa-image"></i>
+            No screenshot uploaded
+          </div>
+        )}
+      </div>
+
+      {/* 價格行 */}
+      <div className="trade-card-prices">
+        <div className="price-group">
+          <span className="price-label">Entry</span>
+          <span className="price-value">${trade.entry_price.toFixed(4)}</span>
+        </div>
+        <span className="price-arrow"><i className="fas fa-arrow-right"></i></span>
+        <div className="price-group">
+          <span className="price-label">Exit</span>
+          <span className="price-value">${trade.exit_price.toFixed(4)}</span>
+        </div>
+        <div className="price-group">
+          <span className="price-label">SL</span>
+          <span className="price-value">{trade.stop_loss ? `$${trade.stop_loss.toFixed(4)}` : '—'}</span>
+        </div>
+        <div className="price-group">
+          <span className="price-label">R:R</span>
+          <span className="price-value rr-value">{calculateRR(trade)}</span>
+        </div>
+        <div className="price-group">
+          <span className="price-label">Date</span>
+          <span className="price-value">{new Date(trade.trade_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+        </div>
+        <div className="price-group result-group">
+          <span className="price-label">Result</span>
+          <span className={`price-value result-value ${pnlColor}`}>
+            {money(trade.pnl)}
+            <small className={pnlColor}>
+              ({trade.pnl_percent >= 0 ? '+' : ''}{trade.pnl_percent.toFixed(2)}%)
+            </small>
+          </span>
+        </div>
+      </div>
+
+      {/* 筆記 + 標籤 + Label */}
+      <div className="trade-card-meta">
+        {trade.notes && (
+          <div className="meta-row">
+            <span className="meta-label"><i className="fas fa-pen"></i> Note</span>
+            <span className="meta-value">{trade.notes}</span>
+          </div>
+        )}
+        {trade.tags.length > 0 && (
+          <div className="meta-row">
+            <span className="meta-label"><i className="fas fa-tags"></i> Tags</span>
+            <span className="meta-value">
+              {trade.tags.map((tag, i) => (
+                <span key={i} className="tag-pill">{tag}</span>
+              ))}
+            </span>
+          </div>
+        )}
+        <div className="meta-row">
+          <span className="meta-label"><i className="fas fa-tag"></i> Label</span>
+          <span className="meta-value">
+            <span className={`label-pill ${labelClass}`}>
+              <i className={`fas ${labelIcon}`}></i> {labelText}
+            </span>
+          </span>
+        </div>
+      </div>
+
+      {/* 操作按鈕 */}
+      <div className="trade-card-actions">
+        <button className="edit-btn" onClick={onEdit}>
+          <i className="fas fa-edit"></i> Edit Trade
+        </button>
+        <button className="delete-btn" onClick={onDelete}>
+          <i className="fas fa-trash-alt"></i> Delete Trade
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ============================================
 // JOURNAL
 // ============================================
 
 function Journal({ trades, onAdd, onEdit, onDelete }: { trades: Trade[]; onAdd: () => void; onEdit: (trade: Trade) => void; onDelete: (id: string) => void }) {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('All');
+  
   const filtered = trades.filter((trade) =>
     (trade.symbol.toLowerCase().includes(search.toLowerCase()) ||
       trade.setup.toLowerCase().includes(search.toLowerCase())) &&
@@ -1956,12 +2085,27 @@ function Journal({ trades, onAdd, onEdit, onDelete }: { trades: Trade[]; onAdd: 
           <button className={filter === 'All' ? 'active' : ''} onClick={() => setFilter('All')}>All trades</button>
           <button className={filter === 'Wins' ? 'active' : ''} onClick={() => setFilter('Wins')}>Winners</button>
           <button className={filter === 'Losses' ? 'active' : ''} onClick={() => setFilter('Losses')}>Losers</button>
-          <button className="filter-icon"><SlidersHorizontal size={16} /></button>
         </div>
       </div>
-      <section className="panel journal-table-panel">
-        <TradeTable trades={filtered} onEdit={onEdit} onDelete={onDelete} />
-      </section>
+
+      <div className="journal-cards">
+        {filtered.length === 0 ? (
+          <div className="empty-state">
+            <BookOpen size={25} />
+            <strong>No trades found</strong>
+            <span>Log your first trade to start building your record.</span>
+          </div>
+        ) : (
+          filtered.map((trade) => (
+            <TradeCard
+              key={trade.id}
+              trade={trade}
+              onEdit={() => onEdit(trade)}
+              onDelete={() => onDelete(trade.id)}
+            />
+          ))
+        )}
+      </div>
     </>
   );
 }
