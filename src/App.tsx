@@ -1931,6 +1931,8 @@ function useStats(trades: Trade[], settings: UserSettings) {
 // ============================================
 
 function TradeCard({ trade, onEdit, onDelete }: { trade: Trade; onEdit: () => void; onDelete: () => void }) {
+  const [showImageModal, setShowImageModal] = useState(false);
+  
   const pnlColor = trade.pnl >= 0 ? 'positive-text' : 'negative-text';
   const directionIcon = trade.side === 'Long' ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />;
   const directionClass = trade.side.toLowerCase();
@@ -1948,6 +1950,17 @@ function TradeCard({ trade, onEdit, onDelete }: { trade: Trade; onEdit: () => vo
     labelClass = 'loss';
     labelIcon = 'fa-times-circle';
   }
+
+  // ESC 鍵關閉彈窗
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowImageModal(false);
+    };
+    if (showImageModal) {
+      document.addEventListener('keydown', handleEsc);
+    }
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [showImageModal]);
 
   return (
     <div className="trade-card">
@@ -1967,8 +1980,12 @@ function TradeCard({ trade, onEdit, onDelete }: { trade: Trade; onEdit: () => vo
         </div>
       </div>
 
-      {/* 截圖 */}
-      <div className="trade-card-screenshot">
+      {/* 截圖 - 點擊可放大 */}
+      <div 
+        className="trade-card-screenshot"
+        onClick={() => trade.screenshot_url && setShowImageModal(true)}
+        style={{ cursor: trade.screenshot_url ? 'pointer' : 'default' }}
+      >
         {trade.screenshot_url ? (
           <img src={trade.screenshot_url} alt="Trade screenshot" />
         ) : (
@@ -1978,6 +1995,21 @@ function TradeCard({ trade, onEdit, onDelete }: { trade: Trade; onEdit: () => vo
           </div>
         )}
       </div>
+
+      {/* 圖片彈窗 */}
+      {showImageModal && trade.screenshot_url && (
+        <div className="image-modal" onClick={() => setShowImageModal(false)}>
+          <div className="image-modal-content" onClick={(e) => e.stopPropagation()}>
+            <button className="image-modal-close" onClick={() => setShowImageModal(false)}>
+              <i className="fas fa-times"></i>
+            </button>
+            <img src={trade.screenshot_url} alt="Trade screenshot full" />
+            <div className="image-modal-caption">
+              {trade.symbol} - {new Date(trade.trade_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 價格行 */}
       <div className="trade-card-prices">
