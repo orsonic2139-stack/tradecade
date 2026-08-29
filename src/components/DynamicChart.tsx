@@ -43,16 +43,15 @@ export function generateMockData(): TradeData[] {
 export default function DynamicChart({ data, height = 190, initialBalance = 10000 }: DynamicChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const tooltipRef = useRef<HTMLDivElement>(null);
   const [hoveredIndex, setHoveredIndex] = useState(-1);
+  const [hoveredData, setHoveredData] = useState<TradeData | null>(null);
 
   const chartData = data.length > 0 ? data : generateMockData();
 
   useEffect(() => {
     const container = containerRef.current;
     const canvas = canvasRef.current;
-    const tooltip = tooltipRef.current;
-    if (!container || !canvas || !tooltip) return;
+    if (!container || !canvas) return;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -78,7 +77,6 @@ export default function DynamicChart({ data, height = 190, initialBalance = 1000
       const chartW = w - pad.left - pad.right;
       const chartH = h - pad.top - pad.bottom;
 
-      // 計算累計餘額 (equity curve)
       let cumulative = initialBalance;
       const equityValues = chartData.map(d => {
         cumulative += d.pnl;
@@ -87,8 +85,6 @@ export default function DynamicChart({ data, height = 190, initialBalance = 1000
 
       const min = Math.min(...equityValues);
       const max = Math.max(...equityValues);
-      
-      // Y軸範圍：上下各保留 20% 空間
       const range = max - min;
       const padding = range * 0.2 || 500;
       const yMin = Math.floor((min - padding) / 1000) * 1000;
@@ -133,7 +129,6 @@ export default function DynamicChart({ data, height = 190, initialBalance = 1000
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // 標記初始餘額
       ctx.fillStyle = 'rgba(255,255,255,0.25)';
       ctx.font = '9px monospace';
       ctx.textAlign = 'right';
@@ -218,7 +213,6 @@ export default function DynamicChart({ data, height = 190, initialBalance = 1000
         }
       }
 
-      // 懸浮線
       if (hoveredIndex >= 0 && hoveredIndex < points.length) {
         const p = points[hoveredIndex];
         ctx.strokeStyle = 'rgba(255,255,255,0.08)';
@@ -263,97 +257,22 @@ export default function DynamicChart({ data, height = 190, initialBalance = 1000
       return nearest;
     }
 
-    function updateTooltip(index: number) {
-  if (index < 0 || index >= chartData.length) {
-    tooltip.classList.remove('visible');
-    return;
-  }
-
-  const data = chartData[index];
-  const pnl = data.pnl;
-
-  // 更新 tooltip 內容
-  const dateEl = tooltip.querySelector('.date');
-  if (dateEl) dateEl.textContent = data.date;
-
-  const valueEl = tooltip.querySelector('.value');
-  if (valueEl) {
-    valueEl.textContent = (pnl >= 0 ? '+' : '-') + '$' + Math.abs(pnl).toLocaleString();
-    valueEl.className = 'value ' + (pnl >= 0 ? 'green' : 'red');
-  }
-
-  const pnlEl = tooltip.querySelector('.pnl-value');
-  if (pnlEl) {
-    pnlEl.textContent = (pnl >= 0 ? '+' : '-') + '$' + Math.abs(pnl).toLocaleString();
-    pnlEl.className = 'pnl-value ' + (pnl >= 0 ? 'green' : 'red');
-  }
-
-  const tradesEl = tooltip.querySelector('.trades-value');
-  if (tradesEl) tradesEl.textContent = String(data.trades);
-
-  // ===== 使用 canvas 的 getBoundingClientRect 計算位置 =====
-  const canvasRect = canvas.getBoundingClientRect();
-  const dpr = 1.5;
-  const pad = { top: 20, bottom: 20, left: 55, right: 16 };
-  const chartW = (canvasRect.width * dpr) - pad.left - pad.right;
-  const chartH = (canvasRect.height * dpr) - pad.top - pad.bottom;
-  
-  // X 位置
-  const x = pad.left + (index / (chartData.length - 1)) * chartW;
-  const pixelX = x / dpr + canvasRect.left;
-  
-  // Y 位置
-  let cumulative = initialBalance;
-  const equityValues = chartData.map(d => {
-    cumulative += d.pnl;
-    return cumulative;
-  });
-  const min = Math.min(...equityValues);
-  const max = Math.max(...equityValues);
-  const range = max - min || 1;
-  const padding = range * 0.2 || 500;
-  const yMin = Math.floor((min - padding) / 1000) * 1000;
-  const yMax = Math.ceil((max + padding) / 1000) * 1000;
-  const yRange = yMax - yMin || 1;
-  
-  const normalized = (equityValues[index] - yMin) / yRange;
-  const canvasY = pad.top + (1 - normalized) * chartH;
-  const pixelY = canvasRect.top + (canvasY / dpr);
-
-  // ===== 定位 tooltip =====
-  const tooltipW = tooltip.offsetWidth || 200;
-  const tooltipH = tooltip.offsetHeight || 80;
-  
-  let left = pixelX - tooltipW / 2;
-  let top = pixelY - tooltipH - 12;
-
-  // 邊界檢查
-  if (left < 10) left = 10;
-  if (left + tooltipW > window.innerWidth - 10) {
-    left = window.innerWidth - tooltipW - 10;
-  }
-  if (top < 10) top = pixelY + 12;
-  if (top + tooltipH > window.innerHeight - 10) {
-    top = window.innerHeight - tooltipH - 10;
-  }
-
-  tooltip.style.left = left + 'px';
-  tooltip.style.top = top + 'px';
-  tooltip.classList.add('visible');
-}
-
     const onMouseMove = (e: MouseEvent) => {
       const pos = getMousePos(e);
       const index = findNearestPoint(pos.x);
       setHoveredIndex(index);
+      if (index >= 0 && index < chartData.length) {
+        setHoveredData(chartData[index]);
+      } else {
+        setHoveredData(null);
+      }
       draw();
-      updateTooltip(index);
     };
 
     const onMouseLeave = () => {
       setHoveredIndex(-1);
+      setHoveredData(null);
       draw();
-      tooltip.classList.remove('visible');
     };
 
     container.addEventListener('mousemove', onMouseMove);
@@ -374,37 +293,53 @@ export default function DynamicChart({ data, height = 190, initialBalance = 1000
   }, [chartData, hoveredIndex, initialBalance]);
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: `${height}px` }} ref={containerRef}>
-      <canvas ref={canvasRef} style={{ width: '100%', height: '100%', display: 'block' }} />
-      <div
-        ref={tooltipRef}
-        style={{
-          position: 'fixed',
-          background: '#1a232e',
-          border: '1px solid #2a3540',
-          borderRadius: '10px',
-          padding: '14px 18px',
-          minWidth: '180px',
-          pointerEvents: 'none',
-          opacity: 0,
-          transition: 'opacity 0.15s ease',
-          boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
-          zIndex: 100,
-        }}
-        className="tooltip"
-      >
-        <div className="date" style={{ color: '#788795', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Date</div>
-        <div className="value green" style={{ fontSize: '20px', fontWeight: 700, margin: '4px 0' }}>+$0</div>
-        <div className="detail" style={{ color: '#b7c3cd', fontSize: '12px', display: 'flex', gap: '14px', marginTop: '4px' }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span className="dot green" style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', background: '#2bc99a' }}></span>
-            P&L: <strong className="pnl-value green" style={{ fontWeight: 600 }}>+$0</strong>
-          </span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span className="dot blue" style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', background: '#4fc3f7' }}></span>
-            Trades: <strong className="trades-value" style={{ fontWeight: 600 }}>0</strong>
-          </span>
+    <div style={{ position: 'relative', width: '100%' }}>
+      {/* 數據顯示 - 在圖表上方，Last 30 days 左側 */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0 4px 8px 4px',
+        minHeight: '24px',
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '16px',
+          fontSize: '11px',
+          color: '#b7c3cd',
+          minHeight: '24px',
+        }}>
+          {hoveredData ? (
+            <>
+              <span style={{ color: '#788795' }}>{hoveredData.date}</span>
+              <span style={{ 
+                color: hoveredData.pnl >= 0 ? '#2bc99a' : '#e8756d',
+                fontWeight: 700,
+                fontSize: '14px',
+              }}>
+                {hoveredData.pnl >= 0 ? '+' : '-'}${Math.abs(hoveredData.pnl).toLocaleString()}
+              </span>
+              <span style={{ color: '#788795' }}>·</span>
+              <span>{hoveredData.trades} trade{hoveredData.trades > 1 ? 's' : ''}</span>
+              <span style={{ color: '#788795' }}>·</span>
+              <span style={{ color: hoveredData.winRate >= 50 ? '#2bc99a' : '#e8756d' }}>
+                {hoveredData.winRate.toFixed(0)}% win rate
+              </span>
+            </>
+          ) : (
+            <span style={{ color: '#586675', fontSize: '11px' }}>Hover over a data point</span>
+          )}
         </div>
+        <div style={{ flexShrink: 0 }}>
+          <button className="select-button" style={{ fontSize: '10px', padding: '4px 10px' }}>
+            Last 30 days <ChevronDown size={12} />
+          </button>
+        </div>
+      </div>
+
+      <div ref={containerRef} style={{ position: 'relative', width: '100%', height: `${height}px` }}>
+        <canvas ref={canvasRef} style={{ width: '100%', height: '100%', display: 'block' }} />
       </div>
     </div>
   );
