@@ -1355,7 +1355,7 @@ useEffect(() => {
     alignItems: 'center',
     justifyContent: 'center',
     padding: '0 20px',
-    height: '56px',
+    height: '48px',
     overflow: 'hidden',
   }}>
     <StrokeText
