@@ -1781,31 +1781,50 @@ function Overview({ trades, settings, stats, onAdd, onViewJournal }: { trades: T
 
       <div className="dashboard-grid">
         <section className="panel performance-panel">
-          <div className="panel-heading">
-            <div>
-              <h3>Performance overview</h3>
-              <span>Equity curve · Last 30 days</span>
-            </div>
-            <button className="select-button">Last 30 days <ChevronDown size={14} /></button>
-          </div>
-          
-          <DynamicChart 
-            data={trades.map(t => ({
-              date: new Date(t.trade_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-              pnl: t.pnl,
-              trades: 1,
-              winRate: t.pnl > 0 ? 100 : 0,
-              wins: t.pnl > 0 ? 1 : 0,
-              losses: t.pnl > 0 ? 0 : 1,
-            }))} 
-          />
-          
-          <div className="chart-footer">
-            <span><i className="legend-dot green" /> Profitable days</span>
-            <span><i className="legend-dot red" /> Losing days</span>
-            <strong>Net {money(statsData.net)}</strong>
-          </div>
-        </section>
+  <div className="panel-heading">
+    <div>
+      <h3>Performance overview</h3>
+      <span>Equity curve · Last 30 days</span>
+    </div>
+    <button className="select-button">Last 30 days <ChevronDown size={14} /></button>
+  </div>
+  
+  <DynamicChart 
+    data={(() => {
+      // 按日期分組聚合 P&L
+      const dailyData: Record<string, { pnl: number; trades: number; wins: number; losses: number }> = {};
+      
+      trades.forEach(t => {
+        const date = new Date(t.trade_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        if (!dailyData[date]) {
+          dailyData[date] = { pnl: 0, trades: 0, wins: 0, losses: 0 };
+        }
+        dailyData[date].pnl += t.pnl;
+        dailyData[date].trades += 1;
+        if (t.pnl > 0) dailyData[date].wins += 1;
+        else dailyData[date].losses += 1;
+      });
+      
+      // 轉換為陣列並按日期排序
+      return Object.entries(dailyData)
+        .map(([date, data]) => ({
+          date,
+          pnl: data.pnl,
+          trades: data.trades,
+          winRate: data.trades > 0 ? (data.wins / data.trades) * 100 : 0,
+          wins: data.wins,
+          losses: data.losses,
+        }))
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    })()}
+  />
+  
+  <div className="chart-footer">
+    <span><i className="legend-dot green" /> Profitable days</span>
+    <span><i className="legend-dot red" /> Losing days</span>
+    <strong>Net {money(statsData.net)}</strong>
+  </div>
+</section>
         
         <section className="panel setup-panel">
           <div className="panel-heading">
