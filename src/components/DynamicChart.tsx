@@ -15,7 +15,6 @@ interface DynamicChartProps {
   initialBalance?: number;
 }
 
-// 生成模擬數據（當 trades 為空時使用）
 export function generateMockData(): TradeData[] {
   const data: TradeData[] = [];
   let value = 0;
@@ -59,7 +58,6 @@ export default function DynamicChart({ data, height = 190, initialBalance = 1000
     if (!ctx) return;
 
     let width: number, height: number;
-    let animationId: number | null = null;
 
     function resize() {
       const rect = container.getBoundingClientRect();
@@ -76,7 +74,7 @@ export default function DynamicChart({ data, height = 190, initialBalance = 1000
     function draw() {
       const w = width;
       const h = height;
-      const pad = { top: 20, bottom: 20, left: 40, right: 16 };
+      const pad = { top: 20, bottom: 20, left: 50, right: 16 };
       const chartW = w - pad.left - pad.right;
       const chartH = h - pad.top - pad.bottom;
 
@@ -91,7 +89,14 @@ export default function DynamicChart({ data, height = 190, initialBalance = 1000
       const max = Math.max(...values, initialBalance);
       const range = max - min || 1;
 
-      const normalized = values.map(v => (v - min) / range);
+      // 計算 Y 軸刻度（0, 1k, 2k, 3k...）
+      const maxVal = Math.max(Math.abs(min - initialBalance), Math.abs(max - initialBalance));
+      const step = Math.ceil(maxVal / 3000) * 1000; // 以 1000 為單位
+      const yMin = Math.floor(min / step) * step;
+      const yMax = Math.ceil(max / step) * step;
+      const yRange = yMax - yMin || 1;
+
+      const normalized = values.map(v => (v - yMin) / yRange);
       const points = normalized.map((v, i) => ({
         x: pad.left + (i / (values.length - 1)) * chartW,
         y: pad.top + (1 - v) * chartH,
@@ -102,7 +107,7 @@ export default function DynamicChart({ data, height = 190, initialBalance = 1000
         date: chartData[i].date,
       }));
 
-      const zeroY = pad.top + (1 - (initialBalance - min) / range) * chartH;
+      const initialY = pad.top + (1 - (initialBalance - yMin) / yRange) * chartH;
 
       ctx.clearRect(0, 0, w, h);
 
@@ -124,16 +129,16 @@ export default function DynamicChart({ data, height = 190, initialBalance = 1000
       ctx.lineWidth = 1;
       ctx.setLineDash([6, 4]);
       ctx.beginPath();
-      ctx.moveTo(pad.left, zeroY);
-      ctx.lineTo(w - pad.right, zeroY);
+      ctx.moveTo(pad.left, initialY);
+      ctx.lineTo(w - pad.right, initialY);
       ctx.stroke();
       ctx.setLineDash([]);
 
       // 標記初始餘額
-      ctx.fillStyle = 'rgba(255,255,255,0.2)';
+      ctx.fillStyle = 'rgba(255,255,255,0.25)';
       ctx.font = '10px monospace';
       ctx.textAlign = 'right';
-      ctx.fillText('$' + initialBalance.toLocaleString(), pad.left - 6, zeroY + 3);
+      ctx.fillText('$' + initialBalance.toLocaleString(), pad.left - 6, initialY + 3);
 
       // 漸變填充
       const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + chartH);
@@ -143,11 +148,11 @@ export default function DynamicChart({ data, height = 190, initialBalance = 1000
       grad.addColorStop(1, 'rgba(72, 217, 169, 0.01)');
 
       ctx.beginPath();
-      ctx.moveTo(points[0].x, zeroY);
+      ctx.moveTo(points[0].x, initialY);
       for (let i = 0; i < points.length; i++) {
         ctx.lineTo(points[i].x, points[i].y);
       }
-      ctx.lineTo(points[points.length - 1].x, zeroY);
+      ctx.lineTo(points[points.length - 1].x, initialY);
       ctx.closePath();
       ctx.fillStyle = grad;
       ctx.fill();
@@ -197,21 +202,20 @@ export default function DynamicChart({ data, height = 190, initialBalance = 1000
         }
       });
 
-      // Y軸標籤 - 字體加大
+      // Y軸標籤 - 以 1k 為單位
       ctx.fillStyle = 'rgba(255,255,255,0.35)';
-      ctx.font = '11px monospace';  // ← 字體加大
+      ctx.font = '11px monospace';
       ctx.textAlign = 'right';
-      const yLabels = [
-        '$' + Math.round(max).toLocaleString(),
-        '$' + Math.round(min + range * 0.66).toLocaleString(),
-        '$' + Math.round(min + range * 0.33).toLocaleString(),
-        '$' + Math.round(min).toLocaleString(),
-      ];
-      const yPositions = [0, 0.33, 0.66, 1];
-      yPositions.forEach((pos, i) => {
-        const y = pad.top + pos * chartH;
-        ctx.fillText(yLabels[i], pad.left - 6, y + 4);
-      });
+      
+      const numSteps = Math.ceil((yMax - yMin) / step);
+      for (let i = 0; i <= numSteps; i++) {
+        const val = yMin + i * step;
+        const pos = (val - yMin) / yRange;
+        const y = pad.top + (1 - pos) * chartH;
+        if (y >= pad.top - 5 && y <= pad.top + chartH + 5) {
+          ctx.fillText('$' + val.toLocaleString(), pad.left - 6, y + 4);
+        }
+      }
 
       // 懸浮線
       if (hoveredIndex >= 0 && hoveredIndex < points.length) {
@@ -239,7 +243,7 @@ export default function DynamicChart({ data, height = 190, initialBalance = 1000
     function findNearestPoint(mouseX: number) {
       const rect = container.getBoundingClientRect();
       const dpr = 1.5;
-      const pad = { top: 20, bottom: 20, left: 40, right: 16 };
+      const pad = { top: 20, bottom: 20, left: 50, right: 16 };
       const chartW = (rect.width * dpr) - pad.left - pad.right;
       const values = chartData.map(d => d.pnl);
 
@@ -262,7 +266,7 @@ export default function DynamicChart({ data, height = 190, initialBalance = 1000
     function updateTooltip(index: number) {
       const rect = container.getBoundingClientRect();
       const dpr = 1.5;
-      const pad = { top: 20, bottom: 20, left: 40, right: 16 };
+      const pad = { top: 20, bottom: 20, left: 50, right: 16 };
       const chartW = (rect.width * dpr) - pad.left - pad.right;
 
       if (index < 0 || index >= chartData.length) {
@@ -274,6 +278,7 @@ export default function DynamicChart({ data, height = 190, initialBalance = 1000
       const pnl = data.pnl;
       const x = pad.left + (index / (chartData.length - 1)) * chartW;
       const pixelX = x / dpr + rect.left;
+      const pixelY = rect.top + 10;
 
       // 更新 tooltip 內容
       const dateEl = tooltip.querySelector('.date');
@@ -294,14 +299,28 @@ export default function DynamicChart({ data, height = 190, initialBalance = 1000
       const tradesEl = tooltip.querySelector('.trades-value');
       if (tradesEl) tradesEl.textContent = String(data.trades);
 
-      // 定位 tooltip
+      // 定位 tooltip - 在點的右上方
       const tooltipW = tooltip.offsetWidth || 200;
-      let left = pixelX - tooltipW / 2;
+      const tooltipH = tooltip.offsetHeight || 80;
+      
+      let left = pixelX + 16; // 點的左側 + 16px 偏移
+      let top = pixelY - tooltipH / 2; // 垂直居中對齊點
+      
+      // 防止超出右邊界
+      if (left + tooltipW > window.innerWidth - 10) {
+        left = pixelX - tooltipW - 16;
+      }
+      // 防止超出左邊界
       if (left < 10) left = 10;
-      if (left + tooltipW > window.innerWidth - 10) left = window.innerWidth - tooltipW - 10;
+      // 防止超出上邊界
+      if (top < 10) top = 10;
+      // 防止超出下邊界
+      if (top + tooltipH > window.innerHeight - 10) {
+        top = window.innerHeight - tooltipH - 10;
+      }
 
       tooltip.style.left = left + 'px';
-      tooltip.style.top = (rect.top - 10) + 'px';
+      tooltip.style.top = top + 'px';
       tooltip.classList.add('visible');
     }
 
@@ -333,7 +352,6 @@ export default function DynamicChart({ data, height = 190, initialBalance = 1000
       container.removeEventListener('mousemove', onMouseMove);
       container.removeEventListener('mouseleave', onMouseLeave);
       ro.disconnect();
-      if (animationId) cancelAnimationFrame(animationId);
     };
   }, [chartData, hoveredIndex, initialBalance]);
 
