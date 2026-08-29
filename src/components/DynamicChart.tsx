@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronDown } from 'lucide-react';
 
 interface TradeData {
   date: string;
@@ -14,6 +13,7 @@ interface DynamicChartProps {
   data: TradeData[];
   height?: number;
   initialBalance?: number;
+  onHover?: (data: TradeData | null) => void;
 }
 
 export function generateMockData(): TradeData[] {
@@ -41,13 +41,23 @@ export function generateMockData(): TradeData[] {
   return data;
 }
 
-export default function DynamicChart({ data, height = 190, initialBalance = 10000 }: DynamicChartProps) {
+export default function DynamicChart({ data, height = 190, initialBalance = 10000, onHover }: DynamicChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hoveredIndex, setHoveredIndex] = useState(-1);
-  const [hoveredData, setHoveredData] = useState<TradeData | null>(null);
 
   const chartData = data.length > 0 ? data : generateMockData();
+
+  // 當 hover 變化時通知父組件
+  useEffect(() => {
+    if (onHover) {
+      if (hoveredIndex >= 0 && hoveredIndex < chartData.length) {
+        onHover(chartData[hoveredIndex]);
+      } else {
+        onHover(null);
+      }
+    }
+  }, [hoveredIndex, chartData, onHover]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -262,17 +272,11 @@ export default function DynamicChart({ data, height = 190, initialBalance = 1000
       const pos = getMousePos(e);
       const index = findNearestPoint(pos.x);
       setHoveredIndex(index);
-      if (index >= 0 && index < chartData.length) {
-        setHoveredData(chartData[index]);
-      } else {
-        setHoveredData(null);
-      }
       draw();
     };
 
     const onMouseLeave = () => {
       setHoveredIndex(-1);
-      setHoveredData(null);
       draw();
     };
 
@@ -294,54 +298,8 @@ export default function DynamicChart({ data, height = 190, initialBalance = 1000
   }, [chartData, hoveredIndex, initialBalance]);
 
   return (
-    <div style={{ position: 'relative', width: '100%' }}>
-      {/* 數據顯示 - 在圖表上方，Last 30 days 左側 */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0 4px 8px 4px',
-        minHeight: '24px',
-      }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '16px',
-          fontSize: '11px',
-          color: '#b7c3cd',
-          minHeight: '24px',
-        }}>
-          {hoveredData ? (
-            <>
-              <span style={{ color: '#788795' }}>{hoveredData.date}</span>
-              <span style={{ 
-                color: hoveredData.pnl >= 0 ? '#2bc99a' : '#e8756d',
-                fontWeight: 700,
-                fontSize: '14px',
-              }}>
-                {hoveredData.pnl >= 0 ? '+' : '-'}${Math.abs(hoveredData.pnl).toLocaleString()}
-              </span>
-              <span style={{ color: '#788795' }}>·</span>
-              <span>{hoveredData.trades} trade{hoveredData.trades > 1 ? 's' : ''}</span>
-              <span style={{ color: '#788795' }}>·</span>
-              <span style={{ color: hoveredData.winRate >= 50 ? '#2bc99a' : '#e8756d' }}>
-                {hoveredData.winRate.toFixed(0)}% win rate
-              </span>
-            </>
-          ) : (
-            <span style={{ color: '#586675', fontSize: '11px' }}>Hover over a data point</span>
-          )}
-        </div>
-        <div style={{ flexShrink: 0 }}>
-          <button className="select-button" style={{ fontSize: '10px', padding: '4px 10px' }}>
-            Last 30 days <ChevronDown size={12} />
-          </button>
-        </div>
-      </div>
-
-      <div ref={containerRef} style={{ position: 'relative', width: '100%', height: `${height}px` }}>
-        <canvas ref={canvasRef} style={{ width: '100%', height: '100%', display: 'block' }} />
-      </div>
+    <div ref={containerRef} style={{ position: 'relative', width: '100%', height: `${height}px` }}>
+      <canvas ref={canvasRef} style={{ width: '100%', height: '100%', display: 'block' }} />
     </div>
   );
 }

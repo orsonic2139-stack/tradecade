@@ -1782,12 +1782,24 @@ function Overview({ trades, settings, stats, onAdd, onViewJournal }: { trades: T
       <div className="dashboard-grid">
         <section className="panel performance-panel">
   <div className="panel-heading">
-    <div>
-      <h3>Performance overview</h3>
-      <span>Equity curve · Last 30 days</span>
+  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1 }}>
+    <h3 style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>Performance overview</h3>
+    {/* 數據顯示區域 - 取代 Equity curve · Last 30 days */}
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: '12px',
+      fontSize: '11px',
+      color: '#b7c3cd',
+    }}>
+      {/* 這裡會由 DynamicChart 的 props 來控制顯示 */}
+      <span id="chart-hover-info" style={{ color: '#586675', fontSize: '11px' }}>Hover over a data point</span>
     </div>
-    <button className="select-button">Last 30 days <ChevronDown size={14} /></button>
   </div>
+  <button className="select-button" style={{ fontSize: '10px', padding: '4px 10px', flexShrink: 0 }}>
+    Last 30 days <ChevronDown size={12} />
+  </button>
+</div>
   
   <DynamicChart 
   data={(() => {
@@ -1816,6 +1828,27 @@ function Overview({ trades, settings, stats, onAdd, onViewJournal }: { trades: T
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   })()}
   initialBalance={settings.initial_capital}
+  onHover={(hoverData) => {
+    const infoEl = document.getElementById('chart-hover-info');
+    if (infoEl) {
+      if (hoverData) {
+        infoEl.innerHTML = `
+          <span style="color:#788795">${hoverData.date}</span>
+          <span style="color:${hoverData.pnl >= 0 ? '#2bc99a' : '#e8756d'};font-weight:700;font-size:14px;">
+            ${hoverData.pnl >= 0 ? '+' : '-'}$${Math.abs(hoverData.pnl).toLocaleString()}
+          </span>
+          <span style="color:#788795">·</span>
+          <span>${hoverData.trades} trade${hoverData.trades > 1 ? 's' : ''}</span>
+          <span style="color:#788795">·</span>
+          <span style="color:${hoverData.winRate >= 50 ? '#2bc99a' : '#e8756d'}">
+            ${hoverData.winRate.toFixed(0)}% win rate
+          </span>
+        `;
+      } else {
+        infoEl.innerHTML = `<span style="color:#586675;font-size:11px;">Hover over a data point</span>`;
+      }
+    }
+  }}
 />
   
   <div className="chart-footer">
