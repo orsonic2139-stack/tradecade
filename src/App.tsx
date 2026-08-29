@@ -1619,22 +1619,49 @@ function RankingDisplay({ stats, trades }: { stats: UserStats | null; trades: Tr
   width: 'auto',
   height: 'auto',
   borderRadius: '0',
-  padding: '0'
+  padding: '0',
+  position: 'relative',
+  display: 'inline-block'
 }}>
   {typeof levelInfo.icon === 'string' && levelInfo.icon.startsWith('http') ? (
-    <img 
-      src={levelInfo.icon} 
-      alt={levelInfo.title} 
-      style={{ width: '120px', height: '120px', objectFit: 'contain' }}
-    />
+    <>
+      <img 
+        src={levelInfo.icon} 
+        alt={levelInfo.title} 
+        style={{ width: '120px', height: '120px', objectFit: 'contain', display: 'block' }}
+      />
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        pointerEvents: 'none',
+        mixBlendMode: 'overlay',
+        background: 'radial-gradient(ellipse at 30% 50%, rgba(104,255,124,0) 0%, rgba(104,255,124,0.3) 40%, rgba(255,255,255,0.5) 60%, rgba(104,255,124,0.3) 80%, transparent 100%)',
+        backgroundSize: '200% 200%',
+        animation: 'shimmerBreath 3s ease-in-out infinite',
+        WebkitMaskImage: `url(${levelInfo.icon})`,
+        WebkitMaskSize: 'contain',
+        WebkitMaskRepeat: 'no-repeat',
+        WebkitMaskPosition: 'center',
+        maskImage: `url(${levelInfo.icon})`,
+        maskSize: 'contain',
+        maskRepeat: 'no-repeat',
+        maskPosition: 'center',
+        border: 'none',
+        outline: 'none',
+        borderRadius: '0'
+      }} />
+    </>
   ) : (
     <span style={{ fontSize: '64px' }}>{levelInfo.icon}</span>
   )}
 </div>
-          <div className="level-info">
-            <h3>{levelInfo.title}</h3>
-            <span className="level-xp">{stats.total_xp.toLocaleString()} XP</span>
-          </div>
+<div className="level-info">
+  <h3>{levelInfo.title}</h3>
+  <span className="level-xp">{stats.total_xp.toLocaleString()} XP</span>
+</div>
         </div>
         <div className="xp-progress">
           <div className="xp-bar">

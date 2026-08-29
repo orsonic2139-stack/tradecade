@@ -3318,3 +3318,19 @@ input:focus, select:focus, textarea:focus {
   width: 54px;
   height: 54px;
 }
+
+/* 柔和光暈流光動畫 */
+@keyframes shimmerBreath {
+  0% { 
+    background-position: 0% 50%; 
+    opacity: 0.3; 
+  }
+  50% { 
+    background-position: 100% 50%; 
+    opacity: 1; 
+  }
+  100% { 
+    background-position: 0% 50%; 
+    opacity: 0.3; 
+  }
+}
