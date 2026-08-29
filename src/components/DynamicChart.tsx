@@ -302,7 +302,7 @@ export default function DynamicChart({ data, height = 190, initialBalance = 1000
   const x = pad.left + (index / (chartData.length - 1)) * chartW;
   const pixelX = x / dpr + rect.left;
   
-  // Y 位置（直接使用 canvas 中的 Y 座標換算）
+  // Y 位置 - 使用 canvas 的實際像素座標換算
   let cumulative = initialBalance;
   const equityValues = chartData.map(d => {
     cumulative += d.pnl;
@@ -317,8 +317,10 @@ export default function DynamicChart({ data, height = 190, initialBalance = 1000
   const yRange = yMax - yMin || 1;
   
   const normalized = (equityValues[index] - yMin) / yRange;
-  // 修正：直接用 rect.top + pad.top + (1 - normalized) * chartH / dpr
-  const pixelY = rect.top + pad.top + (1 - normalized) * (chartH / dpr);
+  
+  // 修正：使用 canvas 繪製時的實際 Y 座標
+  const canvasY = pad.top + (1 - normalized) * chartH; // 這是 canvas 內的像素座標
+  const pixelY = rect.top + (canvasY / dpr); // 轉換為頁面像素
 
   // ===== 定位 tooltip 在數據點上方 =====
   const tooltipW = tooltip.offsetWidth || 200;
