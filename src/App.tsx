@@ -35,6 +35,8 @@ import { SkeletonCard, SkeletonStats, SkeletonTable, SkeletonRanking } from './c
 
 import Ferrofluid from '@/components/Animations/Ferrofluid/Ferrofluid';
 
+import StrokeText from './components/Animations/StrokeText/StrokeText';
+
 // ============================================
 // TYPES
 // ============================================
@@ -1316,56 +1318,82 @@ useEffect(() => {
   </div>
   
   {/* Topbar 內容 - 在上層 */}
+<div style={{ 
+  position: 'relative',
+  zIndex: 1,
+  display: 'flex', 
+  alignItems: 'center', 
+  justifyContent: 'space-between', 
+  width: '100%',
+  padding: '0 20px',
+}}>
+  {/* 左邊區塊 */}
   <div style={{ 
-    position: 'relative',
-    zIndex: 1,
     display: 'flex', 
     alignItems: 'center', 
-    justifyContent: 'space-between', 
-    width: '100%',
+    gap: '16px',
+    background: 'rgba(13, 17, 23, 0.5)',
+    backdropFilter: 'blur(12px)',
+    borderRadius: '16px',
+    border: '1px solid rgba(255, 255, 255, 0.06)',
+    boxShadow: '0 4px 30px rgba(0, 0, 0, 0.2)',
     padding: '0 20px',
+    height: '48px',
   }}>
-    {/* 左邊區塊 */}
-    <div style={{ 
-      display: 'flex', 
-      alignItems: 'center', 
-      gap: '16px',
-      background: 'rgba(13, 17, 23, 0.5)',
-      backdropFilter: 'blur(12px)',
-      borderRadius: '16px',
-      border: '1px solid rgba(255, 255, 255, 0.06)',
-      boxShadow: '0 4px 30px rgba(0, 0, 0, 0.2)',
-      padding: '0 20px',
-      height: '48px',
-    }}>
-      <button className="icon-button menu-button" onClick={() => setMobileNav(true)}><Menu size={20} /></button>
-      <div className="breadcrumb">
-        <span>Workspace</span>
-        <span>/</span>
-        <strong>{navItems.find((item) => item.id === view)?.label}</strong>
-      </div>
-    </div>
-
-    {/* 右邊區塊 */}
-    <div className="topbar-actions" style={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: '12px',
-      background: 'rgba(13, 17, 23, 0.5)',
-      backdropFilter: 'blur(12px)',
-      borderRadius: '16px',
-      border: '1px solid rgba(255, 255, 255, 0.06)',
-      boxShadow: '0 4px 30px rgba(0, 0, 0, 0.2)',
-      padding: '0 16px',
-      height: '48px',
-    }}>
-      <button className="icon-button" onClick={toggleTheme}>
-        {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-      </button>
-      <button className="notification"><span /></button>
-      <div className="avatar small">{initials(email)}</div>
+    <button className="icon-button menu-button" onClick={() => setMobileNav(true)}><Menu size={20} /></button>
+    <div className="breadcrumb">
+      <span>Workspace</span>
+      <span>/</span>
+      <strong>{navItems.find((item) => item.id === view)?.label}</strong>
     </div>
   </div>
+
+  {/* ✅ 中間：StrokeText 文字動畫 */}
+  <div style={{
+    flex: 1,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '0 20px',
+    height: '48px',
+    overflow: 'hidden',
+  }}>
+    <StrokeText
+      text="Tradecade"
+      strokeColor="#48d9a9"
+      fillColor="#e9eef5"
+      strokeWidth={1.2}
+      drawDuration={1.8}
+      fillDelay={0.3}
+      stagger={0.04}
+      fontSize={20}
+      fontWeight={700}
+      letterSpacing={2}
+      trigger="mount"
+      fillMode="wipe"
+    />
+  </div>
+
+  {/* 右邊區塊 */}
+  <div className="topbar-actions" style={{
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    background: 'rgba(13, 17, 23, 0.5)',
+    backdropFilter: 'blur(12px)',
+    borderRadius: '16px',
+    border: '1px solid rgba(255, 255, 255, 0.06)',
+    boxShadow: '0 4px 30px rgba(0, 0, 0, 0.2)',
+    padding: '0 16px',
+    height: '48px',
+  }}>
+    <button className="icon-button" onClick={toggleTheme}>
+      {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+    </button>
+    <button className="notification"><span /></button>
+    <div className="avatar small">{initials(email)}</div>
+  </div>
+</div>
 </header>
 
         <div className="page-content">
