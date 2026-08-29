@@ -12,15 +12,41 @@ interface TradeData {
 interface DynamicChartProps {
   data: TradeData[];
   height?: number;
+  initialBalance?: number;
 }
 
-export default function DynamicChart({ data, height = 190 }: DynamicChartProps) {
+// 生成模擬數據（當 trades 為空時使用）
+export function generateMockData(): TradeData[] {
+  const data: TradeData[] = [];
+  let value = 0;
+  for (let i = 0; i < 30; i++) {
+    const change = (Math.random() - 0.45) * 80;
+    value += change;
+    if (i < 8) value += 8;
+    else if (i < 18) value += 3;
+    else value -= 4;
+    const pnl = Math.max(-150, Math.min(200, value));
+    const date = new Date(2024, 5, i + 1);
+    const trades = Math.floor(Math.random() * 5) + 1;
+    const winRate = 40 + Math.random() * 40;
+    data.push({
+      date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      pnl: Math.round(pnl * 8.5),
+      trades: trades,
+      winRate: Math.round(winRate),
+      wins: Math.round(trades * winRate / 100),
+      losses: trades - Math.round(trades * winRate / 100),
+    });
+  }
+  return data;
+}
+
+export default function DynamicChart({ data, height = 190, initialBalance = 10000 }: DynamicChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const [hoveredIndex, setHoveredIndex] = useState(-1);
 
-  // 如果沒有數據，生成模擬數據
   const chartData = data.length > 0 ? data : generateMockData();
 
   useEffect(() => {
@@ -50,13 +76,19 @@ export default function DynamicChart({ data, height = 190 }: DynamicChartProps) 
     function draw() {
       const w = width;
       const h = height;
-      const pad = { top: 20, bottom: 20, left: 30, right: 16 };
+      const pad = { top: 20, bottom: 20, left: 40, right: 16 };
       const chartW = w - pad.left - pad.right;
       const chartH = h - pad.top - pad.bottom;
 
-      const values = chartData.map(d => d.pnl);
-      const min = Math.min(...values);
-      const max = Math.max(...values);
+      // 計算 cumulative P&L（從 initialBalance 開始）
+      let cumulative = initialBalance;
+      const values = chartData.map(d => {
+        cumulative += d.pnl;
+        return cumulative;
+      });
+
+      const min = Math.min(...values, initialBalance);
+      const max = Math.max(...values, initialBalance);
       const range = max - min || 1;
 
       const normalized = values.map(v => (v - min) / range);
@@ -64,10 +96,13 @@ export default function DynamicChart({ data, height = 190 }: DynamicChartProps) 
         x: pad.left + (i / (values.length - 1)) * chartW,
         y: pad.top + (1 - v) * chartH,
         value: values[i],
-        index: i
+        index: i,
+        pnl: chartData[i].pnl,
+        trades: chartData[i].trades,
+        date: chartData[i].date,
       }));
 
-      const zeroY = pad.top + (1 - (0 - min) / range) * chartH;
+      const zeroY = pad.top + (1 - (initialBalance - min) / range) * chartH;
 
       ctx.clearRect(0, 0, w, h);
 
@@ -84,13 +119,21 @@ export default function DynamicChart({ data, height = 190 }: DynamicChartProps) 
       }
       ctx.setLineDash([]);
 
-      // 零線
-      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+      // 初始餘額線
+      ctx.strokeStyle = 'rgba(255,255,255,0.1)';
       ctx.lineWidth = 1;
+      ctx.setLineDash([6, 4]);
       ctx.beginPath();
       ctx.moveTo(pad.left, zeroY);
       ctx.lineTo(w - pad.right, zeroY);
       ctx.stroke();
+      ctx.setLineDash([]);
+
+      // 標記初始餘額
+      ctx.fillStyle = 'rgba(255,255,255,0.2)';
+      ctx.font = '10px monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText('$' + initialBalance.toLocaleString(), pad.left - 6, zeroY + 3);
 
       // 漸變填充
       const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + chartH);
@@ -128,19 +171,19 @@ export default function DynamicChart({ data, height = 190 }: DynamicChartProps) 
       points.forEach((p, i) => {
         const isHovered = (i === hoveredIndex);
         const radius = isHovered ? 8 : 4;
-        const color = p.value >= 0 ? '#2bc99a' : '#e8756d';
+        const color = p.value >= initialBalance ? '#2bc99a' : '#e8756d';
 
         if (isHovered) {
           ctx.beginPath();
           ctx.arc(p.x, p.y, 16, 0, Math.PI * 2);
-          ctx.fillStyle = p.value >= 0 ? 'rgba(43,201,154,0.15)' : 'rgba(232,117,109,0.15)';
+          ctx.fillStyle = p.value >= initialBalance ? 'rgba(43,201,154,0.15)' : 'rgba(232,117,109,0.15)';
           ctx.fill();
         }
 
         ctx.beginPath();
         ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
         ctx.fillStyle = color;
-        ctx.shadowColor = isHovered ? (p.value >= 0 ? 'rgba(43,201,154,0.5)' : 'rgba(232,117,109,0.5)') : 'transparent';
+        ctx.shadowColor = isHovered ? (p.value >= initialBalance ? 'rgba(43,201,154,0.5)' : 'rgba(232,117,109,0.5)') : 'transparent';
         ctx.shadowBlur = isHovered ? 16 : 0;
         ctx.fill();
         ctx.shadowBlur = 0;
@@ -148,21 +191,26 @@ export default function DynamicChart({ data, height = 190 }: DynamicChartProps) 
         if (isHovered) {
           ctx.beginPath();
           ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
-          ctx.strokeStyle = p.value >= 0 ? '#2bc99a' : '#e8756d';
+          ctx.strokeStyle = p.value >= initialBalance ? '#2bc99a' : '#e8756d';
           ctx.lineWidth = 1.5;
           ctx.stroke();
         }
       });
 
-      // Y軸標籤
-      ctx.fillStyle = 'rgba(255,255,255,0.25)';
-      ctx.font = '9px monospace';
+      // Y軸標籤 - 字體加大
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.font = '11px monospace';  // ← 字體加大
       ctx.textAlign = 'right';
-      const yLabels = ['+$2k', '+$1k', '$0', '-$1k'];
+      const yLabels = [
+        '$' + Math.round(max).toLocaleString(),
+        '$' + Math.round(min + range * 0.66).toLocaleString(),
+        '$' + Math.round(min + range * 0.33).toLocaleString(),
+        '$' + Math.round(min).toLocaleString(),
+      ];
       const yPositions = [0, 0.33, 0.66, 1];
       yPositions.forEach((pos, i) => {
         const y = pad.top + pos * chartH;
-        ctx.fillText(yLabels[i], pad.left - 6, y + 3);
+        ctx.fillText(yLabels[i], pad.left - 6, y + 4);
       });
 
       // 懸浮線
@@ -191,7 +239,7 @@ export default function DynamicChart({ data, height = 190 }: DynamicChartProps) 
     function findNearestPoint(mouseX: number) {
       const rect = container.getBoundingClientRect();
       const dpr = 1.5;
-      const pad = { top: 20, bottom: 20, left: 30, right: 16 };
+      const pad = { top: 20, bottom: 20, left: 40, right: 16 };
       const chartW = (rect.width * dpr) - pad.left - pad.right;
       const values = chartData.map(d => d.pnl);
 
@@ -214,7 +262,7 @@ export default function DynamicChart({ data, height = 190 }: DynamicChartProps) 
     function updateTooltip(index: number) {
       const rect = container.getBoundingClientRect();
       const dpr = 1.5;
-      const pad = { top: 20, bottom: 20, left: 30, right: 16 };
+      const pad = { top: 20, bottom: 20, left: 40, right: 16 };
       const chartW = (rect.width * dpr) - pad.left - pad.right;
 
       if (index < 0 || index >= chartData.length) {
@@ -227,18 +275,26 @@ export default function DynamicChart({ data, height = 190 }: DynamicChartProps) 
       const x = pad.left + (index / (chartData.length - 1)) * chartW;
       const pixelX = x / dpr + rect.left;
 
-      tooltip.querySelector('.date')!.textContent = data.date;
+      // 更新 tooltip 內容
+      const dateEl = tooltip.querySelector('.date');
+      if (dateEl) dateEl.textContent = data.date;
 
-      const valueEl = tooltip.querySelector('.value')!;
-      valueEl.textContent = (pnl >= 0 ? '+' : '-') + '$' + Math.abs(pnl).toLocaleString();
-      valueEl.className = 'value ' + (pnl >= 0 ? 'green' : 'red');
+      const valueEl = tooltip.querySelector('.value');
+      if (valueEl) {
+        valueEl.textContent = (pnl >= 0 ? '+' : '-') + '$' + Math.abs(pnl).toLocaleString();
+        valueEl.className = 'value ' + (pnl >= 0 ? 'green' : 'red');
+      }
 
-      const pnlEl = tooltip.querySelector('.pnl-value')!;
-      pnlEl.textContent = (pnl >= 0 ? '+' : '-') + '$' + Math.abs(pnl).toLocaleString();
-      pnlEl.className = 'pnl-value ' + (pnl >= 0 ? 'green' : 'red');
+      const pnlEl = tooltip.querySelector('.pnl-value');
+      if (pnlEl) {
+        pnlEl.textContent = (pnl >= 0 ? '+' : '-') + '$' + Math.abs(pnl).toLocaleString();
+        pnlEl.className = 'pnl-value ' + (pnl >= 0 ? 'green' : 'red');
+      }
 
-      tooltip.querySelector('.trades-value')!.textContent = String(data.trades);
+      const tradesEl = tooltip.querySelector('.trades-value');
+      if (tradesEl) tradesEl.textContent = String(data.trades);
 
+      // 定位 tooltip
       const tooltipW = tooltip.offsetWidth || 200;
       let left = pixelX - tooltipW / 2;
       if (left < 10) left = 10;
@@ -279,7 +335,7 @@ export default function DynamicChart({ data, height = 190 }: DynamicChartProps) 
       ro.disconnect();
       if (animationId) cancelAnimationFrame(animationId);
     };
-  }, [chartData, hoveredIndex]);
+  }, [chartData, hoveredIndex, initialBalance]);
 
   return (
     <div style={{ position: 'relative', width: '100%', height: `${height}px` }} ref={containerRef}>
@@ -301,45 +357,19 @@ export default function DynamicChart({ data, height = 190 }: DynamicChartProps) 
         }}
         className="tooltip"
       >
-        <div className="date" style={{ color: '#788795', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>June 24, 2024</div>
-        <div className="value green" style={{ fontSize: '20px', fontWeight: 700, margin: '4px 0' }}>+$1,245</div>
+        <div className="date" style={{ color: '#788795', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Date</div>
+        <div className="value green" style={{ fontSize: '20px', fontWeight: 700, margin: '4px 0' }}>+$0</div>
         <div className="detail" style={{ color: '#b7c3cd', fontSize: '12px', display: 'flex', gap: '14px', marginTop: '4px' }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
             <span className="dot green" style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', background: '#2bc99a' }}></span>
-            P&L: <strong className="pnl-value green" style={{ fontWeight: 600 }}>+$1,245</strong>
+            P&L: <strong className="pnl-value green" style={{ fontWeight: 600 }}>+$0</strong>
           </span>
           <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
             <span className="dot blue" style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', background: '#4fc3f7' }}></span>
-            Trades: <strong className="trades-value" style={{ fontWeight: 600 }}>3</strong>
+            Trades: <strong className="trades-value" style={{ fontWeight: 600 }}>0</strong>
           </span>
         </div>
       </div>
     </div>
   );
-}
-
-// 生成模擬數據
-function generateMockData(): TradeData[] {
-  const data: TradeData[] = [];
-  let value = 0;
-  for (let i = 0; i < 30; i++) {
-    const change = (Math.random() - 0.45) * 80;
-    value += change;
-    if (i < 8) value += 8;
-    else if (i < 18) value += 3;
-    else value -= 4;
-    const pnl = Math.max(-150, Math.min(200, value));
-    const date = new Date(2024, 5, i + 1);
-    const trades = Math.floor(Math.random() * 5) + 1;
-    const winRate = 40 + Math.random() * 40;
-    data.push({
-      date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      pnl: Math.round(pnl * 8.5),
-      trades: trades,
-      winRate: Math.round(winRate),
-      wins: Math.round(trades * winRate / 100),
-      losses: trades - Math.round(trades * winRate / 100),
-    });
-  }
-  return data;
 }
