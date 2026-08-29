@@ -78,28 +78,28 @@ export default function DynamicChart({ data, height = 190, initialBalance = 1000
       const chartW = w - pad.left - pad.right;
       const chartH = h - pad.top - pad.bottom;
 
-      // 計算 cumulative P&L（從 initialBalance 開始）
+      // 計算累計餘額 (equity curve)
       let cumulative = initialBalance;
-      const values = chartData.map(d => {
+      const equityValues = chartData.map(d => {
         cumulative += d.pnl;
         return cumulative;
       });
 
-      const min = Math.min(...values, initialBalance);
-      const max = Math.max(...values, initialBalance);
+      const min = Math.min(...equityValues);
+      const max = Math.max(...equityValues);
       
-      // 計算 Y 軸範圍：上下各保留 30% 的空間
+      // Y軸範圍：上下各保留 20% 空間
       const range = max - min;
-      const padding = range * 0.3 || 500;
+      const padding = range * 0.2 || 500;
       const yMin = Math.floor((min - padding) / 1000) * 1000;
       const yMax = Math.ceil((max + padding) / 1000) * 1000;
       const yRange = yMax - yMin || 1;
 
-      const normalized = values.map(v => (v - yMin) / yRange);
+      const normalized = equityValues.map(v => (v - yMin) / yRange);
       const points = normalized.map((v, i) => ({
-        x: pad.left + (i / (values.length - 1)) * chartW,
+        x: pad.left + (i / (equityValues.length - 1)) * chartW,
         y: pad.top + (1 - v) * chartH,
-        value: values[i],
+        value: equityValues[i],
         index: i,
         pnl: chartData[i].pnl,
         trades: chartData[i].trades,
@@ -124,7 +124,7 @@ export default function DynamicChart({ data, height = 190, initialBalance = 1000
       ctx.setLineDash([]);
 
       // 初始餘額線
-      ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+      ctx.strokeStyle = 'rgba(255,255,255,0.12)';
       ctx.lineWidth = 1;
       ctx.setLineDash([6, 4]);
       ctx.beginPath();
@@ -135,14 +135,14 @@ export default function DynamicChart({ data, height = 190, initialBalance = 1000
 
       // 標記初始餘額
       ctx.fillStyle = 'rgba(255,255,255,0.25)';
-      ctx.font = '10px monospace';
+      ctx.font = '9px monospace';
       ctx.textAlign = 'right';
       ctx.fillText('$' + initialBalance.toLocaleString(), pad.left - 6, initialY + 3);
 
       // 漸變填充
       const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + chartH);
-      grad.addColorStop(0, 'rgba(72, 217, 169, 0.3)');
-      grad.addColorStop(0.4, 'rgba(72, 217, 169, 0.12)');
+      grad.addColorStop(0, 'rgba(72, 217, 169, 0.25)');
+      grad.addColorStop(0.4, 'rgba(72, 217, 169, 0.10)');
       grad.addColorStop(0.7, 'rgba(72, 217, 169, 0.04)');
       grad.addColorStop(1, 'rgba(72, 217, 169, 0.01)');
 
@@ -201,7 +201,7 @@ export default function DynamicChart({ data, height = 190, initialBalance = 1000
         }
       });
 
-      // Y軸標籤 - 以 1k 為單位，保留上下空間
+      // Y軸標籤
       ctx.fillStyle = 'rgba(255,255,255,0.35)';
       ctx.font = '10px monospace';
       ctx.textAlign = 'right';
@@ -221,7 +221,7 @@ export default function DynamicChart({ data, height = 190, initialBalance = 1000
       // 懸浮線
       if (hoveredIndex >= 0 && hoveredIndex < points.length) {
         const p = points[hoveredIndex];
-        ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+        ctx.strokeStyle = 'rgba(255,255,255,0.08)';
         ctx.lineWidth = 1;
         ctx.setLineDash([4, 4]);
         ctx.beginPath();
@@ -259,77 +259,50 @@ export default function DynamicChart({ data, height = 190, initialBalance = 1000
         }
       }
 
-      if (minDist > 50) return -1;
+      if (minDist > 40) return -1;
       return nearest;
     }
 
     function updateTooltip(index: number) {
-  const containerRect = container.getBoundingClientRect();
-  const dpr = 1.5;
-  const pad = { top: 20, bottom: 20, left: 55, right: 16 };
-  const chartW = (containerRect.width * dpr) - pad.left - pad.right;
+      if (index < 0 || index >= chartData.length) {
+        tooltip.classList.remove('visible');
+        return;
+      }
 
-  if (index < 0 || index >= chartData.length) {
-    tooltip.classList.remove('visible');
-    return;
-  }
+      const data = chartData[index];
+      const pnl = data.pnl;
 
-  const data = chartData[index];
-  const pnl = data.pnl;
-  const x = pad.left + (index / (chartData.length - 1)) * chartW;
-  const pixelX = x / dpr + containerRect.left;
+      // 更新 tooltip 內容
+      const dateEl = tooltip.querySelector('.date');
+      if (dateEl) dateEl.textContent = data.date;
 
-  // 更新 tooltip 內容（保持不變）
-  const dateEl = tooltip.querySelector('.date');
-  if (dateEl) dateEl.textContent = data.date;
+      const valueEl = tooltip.querySelector('.value');
+      if (valueEl) {
+        valueEl.textContent = (pnl >= 0 ? '+' : '-') + '$' + Math.abs(pnl).toLocaleString();
+        valueEl.className = 'value ' + (pnl >= 0 ? 'green' : 'red');
+      }
 
-  const valueEl = tooltip.querySelector('.value');
-  if (valueEl) {
-    valueEl.textContent = (pnl >= 0 ? '+' : '-') + '$' + Math.abs(pnl).toLocaleString();
-    valueEl.className = 'value ' + (pnl >= 0 ? 'green' : 'red');
-  }
+      const pnlEl = tooltip.querySelector('.pnl-value');
+      if (pnlEl) {
+        pnlEl.textContent = (pnl >= 0 ? '+' : '-') + '$' + Math.abs(pnl).toLocaleString();
+        pnlEl.className = 'pnl-value ' + (pnl >= 0 ? 'green' : 'red');
+      }
 
-  const pnlEl = tooltip.querySelector('.pnl-value');
-  if (pnlEl) {
-    pnlEl.textContent = (pnl >= 0 ? '+' : '-') + '$' + Math.abs(pnl).toLocaleString();
-    pnlEl.className = 'pnl-value ' + (pnl >= 0 ? 'green' : 'red');
-  }
+      const tradesEl = tooltip.querySelector('.trades-value');
+      if (tradesEl) tradesEl.textContent = String(data.trades);
 
-  const tradesEl = tooltip.querySelector('.trades-value');
-  if (tradesEl) tradesEl.textContent = String(data.trades);
+      // 定位 tooltip - 固定在容器內部上方
+      const containerRect = container.getBoundingClientRect();
+      const tooltipW = tooltip.offsetWidth || 200;
+      const tooltipH = tooltip.offsetHeight || 80;
+      
+      let left = containerRect.left + 12;
+      let top = containerRect.top + 12;
 
-  // ===== 修改定位邏輯 =====
-  const tooltipW = tooltip.offsetWidth || 200;
-  const tooltipH = tooltip.offsetHeight || 80;
-  
-  // 數據點的 Y 位置（在卡片內）
-  const pointY = containerRect.top + 20; // 靠近卡片頂部
-  
-  // 計算 tooltip 位置 - 保持在 Performance overview 卡片內
-  let left = pixelX + 12;
-  let top = pointY + 10;
-  
-  // 確保不超出卡片右邊界
-  if (left + tooltipW > containerRect.right - 12) {
-    left = pixelX - tooltipW - 12;
-  }
-  // 確保不超出卡片左邊界
-  if (left < containerRect.left + 12) {
-    left = containerRect.left + 12;
-  }
-  // 確保不超出卡片下邊界
-  if (top + tooltipH > containerRect.bottom - 12) {
-    top = containerRect.bottom - tooltipH - 12;
-  }
-  // 確保不超出卡片上邊界
-  if (top < containerRect.top + 12) {
-    top = containerRect.top + 12;
-  }
-
-  tooltip.style.left = left + 'px';
-  tooltip.style.top = top + 'px';
-  tooltip.classList.add('visible');
-}
+      tooltip.style.left = left + 'px';
+      tooltip.style.top = top + 'px';
+      tooltip.classList.add('visible');
+    }
 
     const onMouseMove = (e: MouseEvent) => {
       const pos = getMousePos(e);
