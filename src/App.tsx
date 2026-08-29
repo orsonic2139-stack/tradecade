@@ -1355,23 +1355,25 @@ useEffect(() => {
     alignItems: 'center',
     justifyContent: 'center',
     padding: '0 20px',
-    height: '48px',
+    height: '56px',
     overflow: 'hidden',
   }}>
     <StrokeText
-      text="Tradecade"
-      strokeColor="#48d9a9"
-      fillColor="#e9eef5"
-      strokeWidth={1.2}
-      drawDuration={1.8}
-      fillDelay={0.3}
-      stagger={0.04}
-      fontSize={20}
-      fontWeight={700}
-      letterSpacing={2}
-      trigger="mount"
-      fillMode="wipe"
-    />
+  text="Tradecade"
+  strokeColor="#77ffb8"
+  fillColor="#ffffff"
+  strokeWidth={1.1}
+  drawDuration={3}
+  fillDelay={0.1}
+  stagger={0.1}
+  fontSize={128}
+  fontWeight={800}
+  letterSpacing={-4}
+  trigger="mount"
+  fillMode="fade"
+  ease="sine.inOut"
+  reverse={false}
+/>
   </div>
 
   {/* 右邊區塊 */}
