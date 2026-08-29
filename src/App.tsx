@@ -1781,31 +1781,55 @@ function Overview({ trades, settings, stats, onAdd, onViewJournal }: { trades: T
 
       <div className="dashboard-grid">
         <section className="panel performance-panel">
-  <div className="panel-heading">
-    <div>
-      <h3>Performance overview</h3>
-      <span>Equity curve · Last 30 days</span>
-    </div>
-    <button className="select-button">Last 30 days <ChevronDown size={14} /></button>
-  </div>
-  
-  <DynamicChart 
-    data={trades.map(t => ({
-      date: new Date(t.trade_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      pnl: t.pnl,
-      trades: 1,
-      winRate: t.pnl > 0 ? 100 : 0,
-      wins: t.pnl > 0 ? 1 : 0,
-      losses: t.pnl > 0 ? 0 : 1,
-    }))} 
-  />
-  
-  <div className="chart-footer">
-    <span><i className="legend-dot green" /> Profitable days</span>
-    <span><i className="legend-dot red" /> Losing days</span>
-    <strong>Net {money(statsData.net)}</strong>
-  </div>
-</section>
+          <div className="panel-heading">
+            <div>
+              <h3>Performance overview</h3>
+              <span>Equity curve · Last 30 days</span>
+            </div>
+            <button className="select-button">Last 30 days <ChevronDown size={14} /></button>
+          </div>
+          
+          <DynamicChart 
+            data={trades.map(t => ({
+              date: new Date(t.trade_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+              pnl: t.pnl,
+              trades: 1,
+              winRate: t.pnl > 0 ? 100 : 0,
+              wins: t.pnl > 0 ? 1 : 0,
+              losses: t.pnl > 0 ? 0 : 1,
+            }))} 
+          />
+          
+          <div className="chart-footer">
+            <span><i className="legend-dot green" /> Profitable days</span>
+            <span><i className="legend-dot red" /> Losing days</span>
+            <strong>Net {money(statsData.net)}</strong>
+          </div>
+        </section>
+        
+        <section className="panel setup-panel">
+          <div className="panel-heading">
+            <div><h3>Setup performance</h3><span>Where your edge comes from</span></div>
+            <button className="more-button">•••</button>
+          </div>
+          {statsData.setups.map((setup) => (
+            <div className="setup-row" key={setup.name}>
+              <div className="setup-name"><span className="setup-dot" />{setup.name}<small>{setup.count} trades</small></div>
+              <strong className={setup.pnl < 0 ? 'negative-text' : ''}>{money(setup.pnl)}</strong>
+              <div className="mini-progress"><span style={{ width: `${Math.min(100, Math.max(10, setup.rate))}%` }} /></div>
+            </div>
+          ))}
+          <button className="text-button" onClick={onViewJournal}>View all setups <ArrowUpRight size={15} /></button>
+        </section>
+      </div>
+      
+      <section className="panel recent-panel">
+        <div className="panel-heading">
+          <div><h3>Recent trades</h3><span>Your latest activity</span></div>
+          <button className="text-button" onClick={onViewJournal}>View journal <ArrowUpRight size={15} /></button>
+        </div>
+        <TradeTable trades={trades.slice(0, 4)} compact />
+      </section>
     </>
   );
 }
