@@ -1625,10 +1625,10 @@ function RankingDisplay({ stats, trades }: { stats: UserStats | null; trades: Tr
     <img 
       src={levelInfo.icon} 
       alt={levelInfo.title} 
-      style={{ width: '80px', height: '80px', objectFit: 'contain' }}
+      style={{ width: '120px', height: '120px', objectFit: 'contain' }}
     />
   ) : (
-    <span style={{ fontSize: '48px' }}>{levelInfo.icon}</span>
+    <span style={{ fontSize: '64px' }}>{levelInfo.icon}</span>
   )}
 </div>
           <div className="level-info">
