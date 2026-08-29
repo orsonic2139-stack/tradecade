@@ -3334,3 +3334,5 @@ input:focus, select:focus, textarea:focus {
     opacity: 0.3; 
   }
 }
+
+.tooltip.visible { opacity: 1 !important; }

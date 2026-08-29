@@ -30,12 +30,10 @@ import {
 } from 'lucide-react';
 
 import { useTheme } from './context/ThemeContext';
-
 import { SkeletonCard, SkeletonStats, SkeletonTable, SkeletonRanking } from './components/Skeleton';
-
 import Ferrofluid from '@/components/Animations/Ferrofluid/Ferrofluid';
-
 import StrokeText from './components/Animations/StrokeText/StrokeText';
+import DynamicChart from './components/DynamicChart';
 
 // ============================================
 // TYPES
@@ -1783,147 +1781,31 @@ function Overview({ trades, settings, stats, onAdd, onViewJournal }: { trades: T
 
       <div className="dashboard-grid">
         <section className="panel performance-panel">
-          <div className="panel-heading">
-            <div><h3>Performance overview</h3><span>Equity curve · Last 30 days</span></div>
-            <button className="select-button">Last 30 days <ChevronDown size={14} /></button>
-          </div>
-          
-          {/* ✅ Dual Color Line Chart */}
-          <div className="chart-area">
-            <div className="y-labels">
-              <span>+$2k</span>
-              <span>+$1k</span>
-              <span>$0</span>
-              <span>-$1k</span>
-            </div>
-            <div className="chart">
-              <div className="grid-line line-1" />
-              <div className="grid-line line-2" />
-              <div className="grid-line line-3" />
-              <div className="grid-line line-4" />
-              <div className="zero-line" />
-              
-              <svg className="chart-svg" viewBox="0 0 500 180" preserveAspectRatio="xMidYMid meet">
-                {statsData.chart.length > 0 && (
-                  <>
-                    {(() => {
-                      const points = statsData.chart.map((item, index) => {
-                        const x = 30 + (index / (statsData.chart.length - 1 || 1)) * 440;
-                        const y = 90 - (item.value / Math.max(max, 1)) * 70;
-                        return { x, y, value: item.value };
-                      });
-                      
-                      // 分離綠色和紅色線段
-                      let greenSegments: string[] = [];
-                      let redSegments: string[] = [];
-                      let currentColor: 'green' | 'red' | null = null;
-                      let currentPoints: { x: number; y: number }[] = [];
-                      
-                      for (let i = 0; i < points.length; i++) {
-                        const p = points[i];
-                        const isGreen = p.value >= 0;
-                        const color = isGreen ? 'green' : 'red';
-                        
-                        if (currentColor !== color && currentPoints.length > 0) {
-                          if (currentColor === 'green') {
-                            greenSegments.push(currentPoints.map(p => `${p.x},${p.y}`).join(' '));
-                          } else if (currentColor === 'red') {
-                            redSegments.push(currentPoints.map(p => `${p.x},${p.y}`).join(' '));
-                          }
-                          currentPoints = [];
-                        }
-                        currentColor = color;
-                        currentPoints.push(p);
-                      }
-                      
-                      if (currentPoints.length > 0) {
-                        if (currentColor === 'green') {
-                          greenSegments.push(currentPoints.map(p => `${p.x},${p.y}`).join(' '));
-                        } else if (currentColor === 'red') {
-                          redSegments.push(currentPoints.map(p => `${p.x},${p.y}`).join(' '));
-                        }
-                      }
-                      
-                      if (points.length === 1) {
-                        const p = points[0];
-                        return <circle cx={p.x} cy={p.y} r="4" fill={p.value >= 0 ? '#2bc99a' : '#e8756d'} />;
-                      }
-                      
-                      return (
-                        <>
-                          {/* 綠色線條（獲利） */}
-                          {greenSegments.map((d, i) => (
-                            <polyline 
-                              key={`g-${i}`} 
-                              points={d} 
-                              fill="none" 
-                              stroke="#2bc99a" 
-                              strokeWidth="2.5" 
-                              strokeLinecap="round" 
-                              strokeLinejoin="round" 
-                            />
-                          ))}
-                          {/* 紅色線條（虧損） */}
-                          {redSegments.map((d, i) => (
-                            <polyline 
-                              key={`r-${i}`} 
-                              points={d} 
-                              fill="none" 
-                              stroke="#e8756d" 
-                              strokeWidth="2.5" 
-                              strokeLinecap="round" 
-                              strokeLinejoin="round" 
-                            />
-                          ))}
-                          {/* 端點圓點 */}
-                          {points.map((p, i) => (
-                            <circle 
-                              key={`dot-${i}`} 
-                              cx={p.x} 
-                              cy={p.y} 
-                              r="3.5" 
-                              fill={p.value >= 0 ? '#2bc99a' : '#e8756d'} 
-                            />
-                          ))}
-                        </>
-                      );
-                    })()}
-                  </>
-                )}
-              </svg>
-            </div>
-          </div>
-          
-          <div className="chart-footer">
-            <span><i className="legend-dot green" /> Profitable days</span>
-            <span><i className="legend-dot red" /> Losing days</span>
-            <strong>Net {money(statsData.net)}</strong>
-          </div>
-        </section>
-        
-        <section className="panel setup-panel">
-          <div className="panel-heading">
-            <div><h3>Setup performance</h3><span>Where your edge comes from</span></div>
-            <button className="more-button">•••</button>
-          </div>
-          {statsData.setups.map((setup) => (
-            <div className="setup-row" key={setup.name}>
-              <div className="setup-name"><span className="setup-dot" />{setup.name}<small>{setup.count} trades</small></div>
-              <strong className={setup.pnl < 0 ? 'negative-text' : ''}>{money(setup.pnl)}</strong>
-              <div className="mini-progress"><span style={{ width: `${Math.min(100, Math.max(10, setup.rate))}%` }} /></div>
-            </div>
-          ))}
-          <button className="text-button" onClick={onViewJournal}>View all setups <ArrowUpRight size={15} /></button>
-        </section>
-      </div>
-      
-      <section className="panel recent-panel">
-        <div className="panel-heading">
-          <div><h3>Recent trades</h3><span>Your latest activity</span></div>
-          <button className="text-button" onClick={onViewJournal}>View journal <ArrowUpRight size={15} /></button>
-        </div>
-        <TradeTable trades={trades.slice(0, 4)} compact />
-      </section>
+  <div className="panel-heading">
+    <div>
+      <h3>Performance overview</h3>
+      <span>Equity curve · Last 30 days</span>
+    </div>
+    <button className="select-button">Last 30 days <ChevronDown size={14} /></button>
+  </div>
+  
+  <DynamicChart 
+    data={trades.map(t => ({
+      date: new Date(t.trade_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      pnl: t.pnl,
+      trades: 1,
+      winRate: t.pnl > 0 ? 100 : 0,
+      wins: t.pnl > 0 ? 1 : 0,
+      losses: t.pnl > 0 ? 0 : 1,
+    }))} 
+  />
+  
+  <div className="chart-footer">
+    <span><i className="legend-dot green" /> Profitable days</span>
+    <span><i className="legend-dot red" /> Losing days</span>
+    <strong>Net {money(statsData.net)}</strong>
+  </div>
+</section>
     </>
   );
 }
