@@ -264,45 +264,82 @@ export default function DynamicChart({ data, height = 190, initialBalance = 1000
     }
 
     function updateTooltip(index: number) {
-      if (index < 0 || index >= chartData.length) {
-        tooltip.classList.remove('visible');
-        return;
-      }
+  if (index < 0 || index >= chartData.length) {
+    tooltip.classList.remove('visible');
+    return;
+  }
 
-      const data = chartData[index];
-      const pnl = data.pnl;
+  const data = chartData[index];
+  const pnl = data.pnl;
 
-      // 更新 tooltip 內容
-      const dateEl = tooltip.querySelector('.date');
-      if (dateEl) dateEl.textContent = data.date;
+  // 更新 tooltip 內容
+  const dateEl = tooltip.querySelector('.date');
+  if (dateEl) dateEl.textContent = data.date;
 
-      const valueEl = tooltip.querySelector('.value');
-      if (valueEl) {
-        valueEl.textContent = (pnl >= 0 ? '+' : '-') + '$' + Math.abs(pnl).toLocaleString();
-        valueEl.className = 'value ' + (pnl >= 0 ? 'green' : 'red');
-      }
+  const valueEl = tooltip.querySelector('.value');
+  if (valueEl) {
+    valueEl.textContent = (pnl >= 0 ? '+' : '-') + '$' + Math.abs(pnl).toLocaleString();
+    valueEl.className = 'value ' + (pnl >= 0 ? 'green' : 'red');
+  }
 
-      const pnlEl = tooltip.querySelector('.pnl-value');
-      if (pnlEl) {
-        pnlEl.textContent = (pnl >= 0 ? '+' : '-') + '$' + Math.abs(pnl).toLocaleString();
-        pnlEl.className = 'pnl-value ' + (pnl >= 0 ? 'green' : 'red');
-      }
+  const pnlEl = tooltip.querySelector('.pnl-value');
+  if (pnlEl) {
+    pnlEl.textContent = (pnl >= 0 ? '+' : '-') + '$' + Math.abs(pnl).toLocaleString();
+    pnlEl.className = 'pnl-value ' + (pnl >= 0 ? 'green' : 'red');
+  }
 
-      const tradesEl = tooltip.querySelector('.trades-value');
-      if (tradesEl) tradesEl.textContent = String(data.trades);
+  const tradesEl = tooltip.querySelector('.trades-value');
+  if (tradesEl) tradesEl.textContent = String(data.trades);
 
-      // 定位 tooltip - 固定在容器內部上方
-      const containerRect = container.getBoundingClientRect();
-      const tooltipW = tooltip.offsetWidth || 200;
-      const tooltipH = tooltip.offsetHeight || 80;
-      
-      let left = containerRect.left + 12;
-      let top = containerRect.top + 12;
+  // ===== 計算數據點在頁面上的實際位置 =====
+  const rect = container.getBoundingClientRect();
+  const dpr = 1.5;
+  const pad = { top: 20, bottom: 20, left: 55, right: 16 };
+  const chartW = (rect.width * dpr) - pad.left - pad.right;
+  
+  // 計算點的 X 位置（在頁面上的像素）
+  const x = pad.left + (index / (chartData.length - 1)) * chartW;
+  const pixelX = x / dpr + rect.left;
+  
+  // 計算點的 Y 位置（在頁面上的像素）
+  // 獲取數據點的 Y 值在 canvas 中的位置
+  let cumulative = initialBalance;
+  const equityValues = chartData.map(d => {
+    cumulative += d.pnl;
+    return cumulative;
+  });
+  const min = Math.min(...equityValues);
+  const max = Math.max(...equityValues);
+  const range = max - min || 1;
+  const padding = range * 0.2 || 500;
+  const yMin = Math.floor((min - padding) / 1000) * 1000;
+  const yMax = Math.ceil((max + padding) / 1000) * 1000;
+  const yRange = yMax - yMin || 1;
+  
+  const normalized = (equityValues[index] - yMin) / yRange;
+  const pixelY = rect.top + pad.top + (1 - normalized) * (rect.height * dpr - pad.top - pad.bottom) / dpr;
 
-      tooltip.style.left = left + 'px';
-      tooltip.style.top = top + 'px';
-      tooltip.classList.add('visible');
-    }
+  // ===== 定位 tooltip 在數據點上方 =====
+  const tooltipW = tooltip.offsetWidth || 200;
+  const tooltipH = tooltip.offsetHeight || 80;
+  
+  let left = pixelX - tooltipW / 2;
+  let top = pixelY - tooltipH - 12; // 在點的上方 12px
+
+  // 確保不超出屏幕邊界
+  if (left < 10) left = 10;
+  if (left + tooltipW > window.innerWidth - 10) {
+    left = window.innerWidth - tooltipW - 10;
+  }
+  if (top < 10) top = pixelY + 12; // 如果上方空間不夠，改為在點下方顯示
+  if (top + tooltipH > window.innerHeight - 10) {
+    top = window.innerHeight - tooltipH - 10;
+  }
+
+  tooltip.style.left = left + 'px';
+  tooltip.style.top = top + 'px';
+  tooltip.classList.add('visible');
+}
 
     const onMouseMove = (e: MouseEvent) => {
       const pos = getMousePos(e);
