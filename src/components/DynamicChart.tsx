@@ -46,7 +46,7 @@ export default function DynamicChart({ data, height = 190, initialBalance = 1000
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hoveredIndex, setHoveredIndex] = useState(-1);
 
-  const chartData = data.length > 0 ? data : generateMockData();
+  const chartData = data;
 
   // 當 hover 變化時通知父組件
   useEffect(() => {
