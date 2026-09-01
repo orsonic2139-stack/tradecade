@@ -1764,11 +1764,16 @@ function Overview({ trades, settings, stats, onAdd, onViewJournal }: { trades: T
   return (
     <>
       <PageHeader 
-        eyebrow="MONDAY, JUNE 24, 2024" 
-        title="Good morning, trader." 
-        description={`Account Balance: $${(settings.account_balance ?? settings.initial_capital).toLocaleString()}`}
-        action={<button className="primary-button" onClick={onAdd}><Plus size={17} /> Log a trade</button>} 
-      />
+  eyebrow={(() => {
+    const now = new Date();
+    const days = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+    const months = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'];
+    return `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`;
+  })()}
+  title="Good morning, trader."
+  description={`Account Balance: $${(settings.account_balance ?? settings.initial_capital).toLocaleString()}`}
+  action={<button className="primary-button" onClick={onAdd}><Plus size={17} /> Log a trade</button>} 
+/>
 
       <RankingDisplay stats={stats} trades={trades} />
 
