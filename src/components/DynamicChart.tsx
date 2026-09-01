@@ -82,36 +82,48 @@ export default function DynamicChart({ data, height = 190, initialBalance = 1000
     }
 
     function draw() {
-      const w = width;
-      const h = height;
-      const pad = { top: 20, bottom: 20, left: 55, right: 16 };
-      const chartW = w - pad.left - pad.right;
-      const chartH = h - pad.top - pad.bottom;
+  const w = width;
+  const h = height;
+  
+  // ✅ 空數據檢查
+  if (chartData.length === 0) {
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = '#586675';
+    ctx.font = '13px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('No trades yet', w / 2, h / 2);
+    return;
+  }
+  
+  const pad = { top: 20, bottom: 20, left: 55, right: 16 };
+  const chartW = w - pad.left - pad.right;
+  const chartH = h - pad.top - pad.bottom;
 
-      let cumulative = initialBalance;
-      const equityValues = chartData.map(d => {
-        cumulative += d.pnl;
-        return cumulative;
-      });
+  let cumulative = initialBalance;
+  const equityValues = chartData.map(d => {
+    cumulative += d.pnl;
+    return cumulative;
+  });
 
-      const min = Math.min(...equityValues);
-      const max = Math.max(...equityValues);
-      const range = max - min;
-      const padding = range * 0.2 || 500;
-      const yMin = Math.floor((min - padding) / 1000) * 1000;
-      const yMax = Math.ceil((max + padding) / 1000) * 1000;
-      const yRange = yMax - yMin || 1;
+  const min = Math.min(...equityValues);
+  const max = Math.max(...equityValues);
+  const range = max - min;
+  const padding = range * 0.2 || 500;
+  const yMin = Math.floor((min - padding) / 1000) * 1000;
+  const yMax = Math.ceil((max + padding) / 1000) * 1000;
+  const yRange = yMax - yMin || 1;
 
-      const normalized = equityValues.map(v => (v - yMin) / yRange);
-      const points = normalized.map((v, i) => ({
-        x: pad.left + (i / (equityValues.length - 1)) * chartW,
-        y: pad.top + (1 - v) * chartH,
-        value: equityValues[i],
-        index: i,
-        pnl: chartData[i].pnl,
-        trades: chartData[i].trades,
-        date: chartData[i].date,
-      }));
+  const normalized = equityValues.map(v => (v - yMin) / yRange);
+  const points = normalized.map((v, i) => ({
+    x: pad.left + (i / (equityValues.length - 1)) * chartW,
+    y: pad.top + (1 - v) * chartH,
+    value: equityValues[i],
+    index: i,
+    pnl: chartData[i].pnl,
+    trades: chartData[i].trades,
+    date: chartData[i].date,
+  }));
 
       const initialY = pad.top + (1 - (initialBalance - yMin) / yRange) * chartH;
 
@@ -269,11 +281,12 @@ export default function DynamicChart({ data, height = 190, initialBalance = 1000
     }
 
     const onMouseMove = (e: MouseEvent) => {
-      const pos = getMousePos(e);
-      const index = findNearestPoint(pos.x);
-      setHoveredIndex(index);
-      draw();
-    };
+  if (chartData.length === 0) return;  // ✅ 添加這行
+  const pos = getMousePos(e);
+  const index = findNearestPoint(pos.x);
+  setHoveredIndex(index);
+  draw();
+};
 
     const onMouseLeave = () => {
       setHoveredIndex(-1);
